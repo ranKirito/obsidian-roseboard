@@ -1,0 +1,252 @@
+import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { Handle, NodeResizer, Position, useStore, type Node, type NodeProps } from '@xyflow/react';
+import { addDays, type BoardNode, type Task } from '../domain/model';
+import type { BoardHost } from './ports';
+import { Markdown } from './Markdown';
+import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
+export type CardData = {
+  node: BoardNode;
+  task?: Task;
+  host: BoardHost;
+  readOnly: boolean;
+  overdue: boolean;
+  blocked: boolean;
+  missing: boolean;
+  count: string;
+  today: string;
+  /** True for a few seconds after another device changed this record. */
+  recent: boolean;
+  complete: (id: string) => void;
+  resize: (id: string, params: { x: number; y: number; width: number; height: number }) => void;
+  begin: () => void;
+  /** Inline edit of the card's primary text: task title, frame title or sticky content. */
+  setText: (nodeId: string, text: string) => void;
+};
+export type FlowNode = Node<CardData, 'card'>;
+const lowDetail = (state: { transform: [number, number, number] }) => state.transform[2] < 0.5;
+export function formatDue(due: string, today: string): string {
+  if (due === today) return 'Today';
+  if (due === addDays(today, 1)) return 'Tomorrow';
+  if (due === addDays(today, -1)) return 'Yesterday';
+  const [y, m, d] = due.split('-').map(Number) as [number, number, number];
+  const date = new Date(y, m - 1, d);
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: y === Number(today.slice(0, 4)) ? undefined : 'numeric',
+  }).format(date);
+}
+/** Text field that commits on Enter/blur and cancels on Escape; used for inline card editing. */
+function InlineText({
+  value,
+  multiline,
+  label,
+  onCommit,
+  onCancel,
+}: {
+  value: string;
+  multiline?: boolean;
+  label: string;
+  onCommit: (text: string) => void;
+  onCancel: () => void;
+}) {
+  const [text, setText] = useState(value);
+  const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  useEffect(() => {
+    ref.current?.focus();
+    ref.current?.select();
+  }, []);
+  const keyDown = (e: KeyboardEvent) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    } else if (e.key === 'Enter' && (!multiline || e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      onCommit(text);
+    }
+  };
+  const props = {
+    ref,
+    value: text,
+    'aria-label': label,
+    className: 'rb-inline nodrag nopan nowheel',
+    onChange: (e: { target: { value: string } }) => setText(e.target.value),
+    onBlur: () => onCommit(text),
+    onKeyDown: keyDown,
+    onPointerDown: (e: { stopPropagation: () => void }) => e.stopPropagation(),
+  };
+  return multiline ? <textarea {...props} rows={6} /> : <input {...props} />;
+}
+export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNode>) {
+  const { node, task, host, readOnly } = data;
+  const minimal = useStore(lowDetail);
+  const [editing, setEditing] = useState(false);
+  const tint = node.color ? ` rb-tint-${node.color}` : '';
+  const startEdit = () => {
+    if (!readOnly) setEditing(true);
+  };
+  const commit = (text: string) => {
+    setEditing(false);
+    data.setText(id, text);
+  };
+  const isFrame = node.type === 'frame';
+  return (
+    <div
+      className={`rb-card rb-card-${node.type}${task?.status === 'done' ? ' rb-done' : ''}${tint}${data.recent ? ' rb-recent' : ''}${editing ? ' rb-editing' : ''}`}
+      data-testid={`card-${node.type}`}
+    >
+      <NodeResizer
+        isVisible={selected && !readOnly}
+        minWidth={isFrame ? 240 : 180}
+        minHeight={isFrame ? 140 : 120}
+        onResizeStart={data.begin}
+        onResizeEnd={(_, params) => data.resize(id, params)}
+      />
+      <Handle type="target" position={Position.Left} id="left" isConnectable={!readOnly} aria-label="Connect from the left" />
+      <Handle type="target" position={Position.Top} id="top" isConnectable={!readOnly} aria-label="Connect from the top" />
+      {node.type === 'task' && task && (
+        <>
+          <div className="rb-card-head">
+            <span className={`rb-chip rb-status rb-status-${task.status}`}>
+              <Icon name={statusIcon[task.status]!} />
+              {statusLabel[task.status]}
+            </span>
+            {task.priority !== 'none' && (
+              <span className={`rb-chip rb-priority rb-priority-${task.priority}`} title={`${task.priority} priority`}>
+                <Icon name={priorityIcon[task.priority]!} />
+                {task.priority}
+              </span>
+            )}
+            {data.blocked && task.status !== 'done' && (
+              <span className="rb-chip rb-chip-blocked">
+                <Icon name="ban" />
+                Blocked
+              </span>
+            )}
+          </div>
+          <div className="rb-card-title">
+            <button
+              className="rb-complete nodrag"
+              aria-label={task.status === 'done' ? `Reopen ${task.title}` : `Complete ${task.title}`}
+              disabled={readOnly}
+              onClick={() => data.complete(node.taskId)}
+            >
+              <Icon name={task.status === 'done' ? 'circle-check-big' : 'circle'} />
+            </button>
+            {editing ? (
+              <InlineText value={task.title} label="Edit task title" onCommit={commit} onCancel={() => setEditing(false)} />
+            ) : (
+              <strong onDoubleClick={startEdit} title={readOnly ? undefined : 'Double-click to rename'}>
+                {task.title}
+              </strong>
+            )}
+          </div>
+          {!minimal && (
+            <div className="rb-card-meta">
+              {task.dueDate && (
+                <span className={`rb-meta${data.overdue ? ' rb-overdue' : ''}`} title={task.dueDate}>
+                  <Icon name={data.overdue ? 'alarm-clock' : 'calendar'} />
+                  {data.overdue ? 'Overdue · ' : ''}
+                  {formatDue(task.dueDate, data.today)}
+                </span>
+              )}
+              {!!task.checklist.length && (
+                <span className="rb-meta rb-progress" title="Checklist">
+                  <span className="rb-progress-bar">
+                    <span
+                      style={{
+                        width: `${Math.round((task.checklist.filter((i) => i.done).length / task.checklist.length) * 100)}%`,
+                      }}
+                    />
+                  </span>
+                  {task.checklist.filter((i) => i.done).length}/{task.checklist.length}
+                </span>
+              )}
+              {task.notePath && (
+                <button
+                  className={`rb-meta rb-note-link nodrag${data.missing ? ' rb-overdue' : ''}`}
+                  aria-label={`Open linked note ${task.notePath}`}
+                  onClick={() => host.openNote(task.notePath!)}
+                >
+                  <Icon name={data.missing ? 'file-x' : 'file-text'} />
+                  {data.missing ? 'Missing note' : 'Note'}
+                </button>
+              )}
+              {!!task.tags.length && (
+                <span className="rb-tags">
+                  {task.tags.slice(0, 4).map((t) => (
+                    <span className="rb-tag" key={t}>
+                      #{t}
+                    </span>
+                  ))}
+                  {task.tags.length > 4 && <span className="rb-tag">+{task.tags.length - 4}</span>}
+                </span>
+              )}
+            </div>
+          )}
+        </>
+      )}
+      {node.type === 'sticky' && (
+        <>
+          <div className="rb-card-head rb-card-head-sticky">
+            <span className="rb-chip">
+              <Icon name="sticky-note" />
+              Note
+            </span>
+          </div>
+          {editing ? (
+            <InlineText
+              value={node.content}
+              multiline
+              label="Edit note"
+              onCommit={commit}
+              onCancel={() => setEditing(false)}
+            />
+          ) : (
+            <div className="rb-sticky-body" onDoubleClick={startEdit}>
+              <Markdown text={minimal ? node.content.slice(0, 80) : node.content} host={host} />
+            </div>
+          )}
+        </>
+      )}
+      {node.type === 'note' && (
+        <>
+          <div className="rb-card-head">
+            <span className="rb-chip">
+              <Icon name="link" />
+              Vault note
+            </span>
+          </div>
+          <div className="rb-card-title">
+            <Icon name={data.missing ? 'file-x' : 'file-text'} className="rb-icon-lg" />
+            <strong>{node.notePath.split('/').pop()?.replace(/\.md$/, '')}</strong>
+          </div>
+          <div className="rb-card-meta">
+            {!minimal && <span className="rb-path">{node.notePath}</span>}
+            <button
+              className={`rb-meta rb-note-link nodrag${data.missing ? ' rb-overdue' : ''}`}
+              onClick={() => host.openNote(node.notePath)}
+            >
+              <Icon name="arrow-up-right" />
+              {data.missing ? 'Missing note' : 'Open'}
+            </button>
+          </div>
+        </>
+      )}
+      {isFrame && (
+        <div className="rb-frame-label">
+          {editing ? (
+            <InlineText value={node.title} label="Edit frame name" onCommit={commit} onCancel={() => setEditing(false)} />
+          ) : (
+            <strong onDoubleClick={startEdit}>{node.title}</strong>
+          )}
+          <span>{data.count}</span>
+        </div>
+      )}
+      <Handle type="source" position={Position.Right} id="right" isConnectable={!readOnly} aria-label="Connect to the right" />
+      <Handle type="source" position={Position.Bottom} id="bottom" isConnectable={!readOnly} aria-label="Connect to the bottom" />
+    </div>
+  );
+});
+export const nodeTypes = { card: Card };

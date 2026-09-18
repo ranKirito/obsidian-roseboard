@@ -1,0 +1,500 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "boardId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "timeZone": {
+      "type": "string",
+      "description": "IANA timezone; when absent defaults to the current device timezone, then is stored explicitly on the next edit."
+    },
+    "tasks": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "description": {
+            "default": "",
+            "type": "string",
+            "maxLength": 100000
+          },
+          "status": {
+            "default": "todo",
+            "type": "string",
+            "enum": [
+              "backlog",
+              "todo",
+              "doing",
+              "done"
+            ]
+          },
+          "priority": {
+            "default": "none",
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "tags": {
+            "default": [],
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "checklist": {
+            "default": [],
+            "maxItems": 1000,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "text": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "done": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "text"
+              ],
+              "additionalProperties": {}
+            }
+          },
+          "dependsOn": {
+            "default": [],
+            "maxItems": 10000,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "notePath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "updatedBy": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "nodes": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "task"
+              },
+              "taskId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "default": 300,
+                "type": "number",
+                "minimum": 160,
+                "maximum": 100000
+              },
+              "height": {
+                "default": 190,
+                "type": "number",
+                "minimum": 100,
+                "maximum": 100000
+              },
+              "frameId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "rose",
+                  "amber",
+                  "mint",
+                  "sky",
+                  "violet",
+                  "slate"
+                ]
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "updatedBy": {
+                "type": "string",
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "type",
+              "taskId",
+              "x",
+              "y"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "sticky"
+              },
+              "content": {
+                "default": "",
+                "type": "string",
+                "maxLength": 100000
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "default": 300,
+                "type": "number",
+                "minimum": 160,
+                "maximum": 100000
+              },
+              "height": {
+                "default": 190,
+                "type": "number",
+                "minimum": 100,
+                "maximum": 100000
+              },
+              "frameId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "rose",
+                  "amber",
+                  "mint",
+                  "sky",
+                  "violet",
+                  "slate"
+                ]
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "updatedBy": {
+                "type": "string",
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "type",
+              "x",
+              "y"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "note"
+              },
+              "notePath": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "default": 300,
+                "type": "number",
+                "minimum": 160,
+                "maximum": 100000
+              },
+              "height": {
+                "default": 190,
+                "type": "number",
+                "minimum": 100,
+                "maximum": 100000
+              },
+              "frameId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "rose",
+                  "amber",
+                  "mint",
+                  "sky",
+                  "violet",
+                  "slate"
+                ]
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "updatedBy": {
+                "type": "string",
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "type",
+              "notePath",
+              "x",
+              "y"
+            ],
+            "additionalProperties": {}
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "frame"
+              },
+              "title": {
+                "default": "Frame",
+                "type": "string",
+                "maxLength": 500
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "default": 300,
+                "type": "number",
+                "minimum": 160,
+                "maximum": 100000
+              },
+              "height": {
+                "default": 190,
+                "type": "number",
+                "minimum": 100,
+                "maximum": 100000
+              },
+              "frameId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "color": {
+                "type": "string",
+                "enum": [
+                  "rose",
+                  "amber",
+                  "mint",
+                  "sky",
+                  "violet",
+                  "slate"
+                ]
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "updatedBy": {
+                "type": "string",
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "type",
+              "x",
+              "y"
+            ],
+            "additionalProperties": {}
+          }
+        ]
+      }
+    },
+    "edges": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "label": {
+            "default": "",
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "source",
+          "target"
+        ],
+        "additionalProperties": {}
+      }
+    },
+    "ink": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "minItems": 4,
+            "maxItems": 40000,
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "color": {
+            "default": "ink",
+            "type": "string",
+            "enum": [
+              "ink",
+              "rose",
+              "amber",
+              "mint",
+              "sky",
+              "violet",
+              "slate"
+            ]
+          },
+          "width": {
+            "default": 3,
+            "type": "number",
+            "minimum": 1,
+            "maximum": 40
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "updatedBy": {
+            "type": "string",
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "points"
+        ],
+        "additionalProperties": {}
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "boardId",
+    "title"
+  ],
+  "additionalProperties": {},
+  "$id": "https://roseboard.local/schema/v1.json",
+  "title": "Roseboard v1",
+  "$comment": "Runtime validation additionally enforces real calendar dates, IANA time zones, safe vault paths, reserved IDs, references, unique placements, checklist IDs, frame depth, and an acyclic dependency graph."
+}

@@ -1,0 +1,2321 @@
+/* this gets exported as style.css and can be used for the default theming */
+/* these are the necessary styles for React/Svelte Flow, they get used by base.css and style.css */
+.roseboard-root .react-flow {
+  direction: ltr;
+
+  --xy-edge-stroke-default: #b1b1b7;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #555;
+
+  --xy-connectionline-stroke-default: #b1b1b7;
+  --xy-connectionline-stroke-width-default: 1;
+
+  --xy-attribution-background-color-default: rgba(255, 255, 255, 0.5);
+
+  --xy-minimap-background-color-default: #fff;
+  --xy-minimap-mask-background-color-default: rgba(240, 240, 240, 0.6);
+  --xy-minimap-mask-stroke-color-default: transparent;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: #e2e2e2;
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+
+  --xy-background-color-default: transparent;
+  --xy-background-pattern-dots-color-default: #91919a;
+  --xy-background-pattern-lines-color-default: #eee;
+  --xy-background-pattern-cross-color-default: #e2e2e2;
+  background-color: var(--xy-background-color, var(--xy-background-color-default));
+  --xy-node-color-default: inherit;
+  --xy-node-border-default: 1px solid #1a192b;
+  --xy-node-background-color-default: #fff;
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(0, 0, 0, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #1a192b;
+  --xy-node-border-radius-default: 3px;
+
+  --xy-handle-background-color-default: #1a192b;
+  --xy-handle-border-color-default: #fff;
+
+  --xy-selection-background-color-default: rgba(0, 89, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(0, 89, 220, 0.8);
+
+  --xy-controls-button-background-color-default: #fefefe;
+  --xy-controls-button-background-color-hover-default: #f4f4f4;
+  --xy-controls-button-color-default: inherit;
+  --xy-controls-button-color-hover-default: inherit;
+  --xy-controls-button-border-color-default: #eee;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+
+  --xy-edge-label-background-color-default: #ffffff;
+  --xy-edge-label-color-default: inherit;
+  --xy-resize-background-color-default: #3367d9;
+}
+.roseboard-root .react-flow.dark {
+  --xy-edge-stroke-default: #3e3e3e;
+  --xy-edge-stroke-width-default: 1;
+  --xy-edge-stroke-selected-default: #727272;
+
+  --xy-connectionline-stroke-default: #b1b1b7;
+  --xy-connectionline-stroke-width-default: 1;
+
+  --xy-attribution-background-color-default: rgba(150, 150, 150, 0.25);
+
+  --xy-minimap-background-color-default: #141414;
+  --xy-minimap-mask-background-color-default: rgba(60, 60, 60, 0.6);
+  --xy-minimap-mask-stroke-color-default: transparent;
+  --xy-minimap-mask-stroke-width-default: 1;
+  --xy-minimap-node-background-color-default: #2b2b2b;
+  --xy-minimap-node-stroke-color-default: transparent;
+  --xy-minimap-node-stroke-width-default: 2;
+
+  --xy-background-color-default: #141414;
+  --xy-background-pattern-dots-color-default: #555;
+  --xy-background-pattern-lines-color-default: #333;
+  --xy-background-pattern-cross-color-default: #333;
+  --xy-node-color-default: #f8f8f8;
+  --xy-node-border-default: 1px solid #3c3c3c;
+  --xy-node-background-color-default: #1e1e1e;
+  --xy-node-group-background-color-default: rgba(240, 240, 240, 0.25);
+  --xy-node-boxshadow-hover-default: 0 1px 4px 1px rgba(255, 255, 255, 0.08);
+  --xy-node-boxshadow-selected-default: 0 0 0 0.5px #999;
+
+  --xy-handle-background-color-default: #bebebe;
+  --xy-handle-border-color-default: #1e1e1e;
+
+  --xy-selection-background-color-default: rgba(200, 200, 220, 0.08);
+  --xy-selection-border-default: 1px dotted rgba(200, 200, 220, 0.8);
+
+  --xy-controls-button-background-color-default: #2b2b2b;
+  --xy-controls-button-background-color-hover-default: #3e3e3e;
+  --xy-controls-button-color-default: #f8f8f8;
+  --xy-controls-button-color-hover-default: #fff;
+  --xy-controls-button-border-color-default: #5b5b5b;
+  --xy-controls-box-shadow-default: 0 0 2px 1px rgba(0, 0, 0, 0.08);
+
+  --xy-edge-label-background-color-default: #141414;
+  --xy-edge-label-color-default: #f8f8f8;
+}
+.roseboard-root .react-flow__background {
+  background-color: var(--xy-background-color-props, var(--xy-background-color, var(--xy-background-color-default)));
+  pointer-events: none;
+  z-index: -1;
+}
+.roseboard-root .react-flow__container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+.roseboard-root .react-flow__pane {
+  z-index: 1;
+  touch-action: none;
+}
+.roseboard-root .react-flow__pane.draggable {
+    cursor: grab;
+  }
+.roseboard-root .react-flow__pane.dragging {
+    cursor: grabbing;
+  }
+.roseboard-root .react-flow__pane.selection {
+    cursor: pointer;
+  }
+.roseboard-root .react-flow__viewport {
+  transform-origin: 0 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.roseboard-root .react-flow__renderer {
+  z-index: 4;
+}
+.roseboard-root .react-flow__selection {
+  z-index: 6;
+}
+.roseboard-root .react-flow__nodesselection-rect:focus,
+.roseboard-root .react-flow__nodesselection-rect:focus-visible {
+  outline: none;
+}
+.roseboard-root .react-flow__edge-path {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+  stroke-width: var(--xy-edge-stroke-width, var(--xy-edge-stroke-width-default));
+  fill: none;
+}
+.roseboard-root .react-flow__connection-path {
+  stroke: var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default));
+  stroke-width: var(--xy-connectionline-stroke-width, var(--xy-connectionline-stroke-width-default));
+  fill: none;
+}
+.roseboard-root .react-flow .react-flow__edges {
+  position: absolute;
+}
+.roseboard-root .react-flow .react-flow__edges svg {
+    overflow: visible;
+    position: absolute;
+    pointer-events: none;
+  }
+.roseboard-root .react-flow__edge {
+  pointer-events: visibleStroke;
+}
+.roseboard-root .react-flow__edge.selectable {
+    cursor: pointer;
+  }
+.roseboard-root .react-flow__edge.animated path {
+    stroke-dasharray: 5;
+    animation: rb-flow-dashdraw 0.5s linear infinite;
+  }
+.roseboard-root .react-flow__edge.animated path.react-flow__edge-interaction {
+    stroke-dasharray: none;
+    animation: none;
+  }
+.roseboard-root .react-flow__edge.inactive {
+    pointer-events: none;
+  }
+.roseboard-root .react-flow__edge.selected,
+  .roseboard-root .react-flow__edge:focus,
+  .roseboard-root .react-flow__edge:focus-visible {
+    outline: none;
+  }
+.roseboard-root .react-flow__edge.selected .react-flow__edge-path,
+  .roseboard-root .react-flow__edge.selectable:focus .react-flow__edge-path,
+  .roseboard-root .react-flow__edge.selectable:focus-visible .react-flow__edge-path {
+    stroke: var(--xy-edge-stroke-selected, var(--xy-edge-stroke-selected-default));
+  }
+.roseboard-root .react-flow__edge-textwrapper {
+    pointer-events: all;
+  }
+.roseboard-root .react-flow__edge .react-flow__edge-text {
+    pointer-events: none;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+            user-select: none;
+  }
+/* Arrowhead marker styles - use CSS custom properties as default */
+.roseboard-root .react-flow__arrowhead polyline {
+  stroke: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
+.roseboard-root .react-flow__arrowhead polyline.arrowclosed {
+  fill: var(--xy-edge-stroke, var(--xy-edge-stroke-default));
+}
+.roseboard-root .react-flow__connection {
+  pointer-events: none;
+}
+.roseboard-root .react-flow__connection .animated {
+    stroke-dasharray: 5;
+    animation: rb-flow-dashdraw 0.5s linear infinite;
+  }
+.roseboard-root svg.react-flow__connectionline {
+  z-index: 1001;
+  overflow: visible;
+  position: absolute;
+}
+.roseboard-root .react-flow__nodes {
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+.roseboard-root .react-flow__node {
+  position: absolute;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  pointer-events: all;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+  cursor: default;
+}
+.roseboard-root .react-flow__node.selectable {
+    cursor: pointer;
+  }
+.roseboard-root .react-flow__node.draggable {
+    cursor: grab;
+    pointer-events: all;
+  }
+.roseboard-root .react-flow__node.draggable.dragging {
+      cursor: grabbing;
+    }
+.roseboard-root .react-flow__nodesselection {
+  z-index: 3;
+  transform-origin: left top;
+  pointer-events: none;
+}
+.roseboard-root .react-flow__nodesselection-rect {
+    position: absolute;
+    pointer-events: all;
+    cursor: grab;
+  }
+.roseboard-root .react-flow__handle {
+  position: absolute;
+  pointer-events: none;
+  min-width: 5px;
+  min-height: 5px;
+  width: 6px;
+  height: 6px;
+  background-color: var(--xy-handle-background-color, var(--xy-handle-background-color-default));
+  border: 1px solid var(--xy-handle-border-color, var(--xy-handle-border-color-default));
+  border-radius: 100%;
+}
+.roseboard-root .react-flow__handle.connectingfrom {
+    pointer-events: all;
+  }
+.roseboard-root .react-flow__handle.connectionindicator {
+    pointer-events: all;
+    cursor: crosshair;
+  }
+.roseboard-root .react-flow__handle-bottom {
+    top: auto;
+    left: 50%;
+    bottom: 0;
+    transform: translate(-50%, 50%);
+  }
+.roseboard-root .react-flow__handle-top {
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+.roseboard-root .react-flow__handle-left {
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%);
+  }
+.roseboard-root .react-flow__handle-right {
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+  }
+.roseboard-root .react-flow__edgeupdater {
+  cursor: move;
+  pointer-events: all;
+}
+.roseboard-root .react-flow__pane.selection .react-flow__panel {
+  pointer-events: none;
+}
+.roseboard-root .react-flow__panel {
+  position: absolute;
+  z-index: 5;
+  margin: 15px;
+}
+.roseboard-root .react-flow__panel.top {
+    top: 0;
+  }
+.roseboard-root .react-flow__panel.bottom {
+    bottom: 0;
+  }
+.roseboard-root .react-flow__panel.top.center, .roseboard-root .react-flow__panel.bottom.center {
+      left: 50%;
+      transform: translateX(-15px) translateX(-50%);
+    }
+.roseboard-root .react-flow__panel.left {
+    left: 0;
+  }
+.roseboard-root .react-flow__panel.right {
+    right: 0;
+  }
+.roseboard-root .react-flow__panel.left.center, .roseboard-root .react-flow__panel.right.center {
+      top: 50%;
+      transform: translateY(-15px) translateY(-50%);
+    }
+.roseboard-root .react-flow__attribution {
+  font-size: 10px;
+  background: var(--xy-attribution-background-color, var(--xy-attribution-background-color-default));
+  padding: 2px 3px;
+  margin: 0;
+}
+.roseboard-root .react-flow__attribution a {
+    text-decoration: none;
+    color: #999;
+  }
+@keyframes rb-flow-dashdraw {
+  from {
+    stroke-dashoffset: 10;
+  }
+}
+.roseboard-root .react-flow__edgelabel-renderer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  left: 0;
+  top: 0;
+}
+.roseboard-root .react-flow__viewport-portal {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.roseboard-root .react-flow__minimap {
+  background: var(
+    --xy-minimap-background-color-props,
+    var(--xy-minimap-background-color, var(--xy-minimap-background-color-default))
+  );
+}
+.roseboard-root .react-flow__minimap-svg {
+    display: block;
+  }
+.roseboard-root .react-flow__minimap-mask {
+    fill: var(
+      --xy-minimap-mask-background-color-props,
+      var(--xy-minimap-mask-background-color, var(--xy-minimap-mask-background-color-default))
+    );
+    stroke: var(
+      --xy-minimap-mask-stroke-color-props,
+      var(--xy-minimap-mask-stroke-color, var(--xy-minimap-mask-stroke-color-default))
+    );
+    stroke-width: var(
+      --xy-minimap-mask-stroke-width-props,
+      var(--xy-minimap-mask-stroke-width, var(--xy-minimap-mask-stroke-width-default))
+    );
+  }
+.roseboard-root .react-flow__minimap-node {
+    fill: var(
+      --xy-minimap-node-background-color-props,
+      var(--xy-minimap-node-background-color, var(--xy-minimap-node-background-color-default))
+    );
+    stroke: var(
+      --xy-minimap-node-stroke-color-props,
+      var(--xy-minimap-node-stroke-color, var(--xy-minimap-node-stroke-color-default))
+    );
+    stroke-width: var(
+      --xy-minimap-node-stroke-width-props,
+      var(--xy-minimap-node-stroke-width, var(--xy-minimap-node-stroke-width-default))
+    );
+  }
+.roseboard-root .react-flow__background-pattern.dots {
+    fill: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-dots-color-default))
+    );
+  }
+.roseboard-root .react-flow__background-pattern.lines {
+    stroke: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-lines-color-default))
+    );
+  }
+.roseboard-root .react-flow__background-pattern.cross {
+    stroke: var(
+      --xy-background-pattern-color-props,
+      var(--xy-background-pattern-color, var(--xy-background-pattern-cross-color-default))
+    );
+  }
+.roseboard-root .react-flow__controls {
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--xy-controls-box-shadow, var(--xy-controls-box-shadow-default));
+}
+.roseboard-root .react-flow__controls.horizontal {
+    flex-direction: row;
+  }
+.roseboard-root .react-flow__controls-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 26px;
+    width: 26px;
+    padding: 4px;
+    border: none;
+    background: var(--xy-controls-button-background-color, var(--xy-controls-button-background-color-default));
+    border-bottom: 1px solid
+      var(
+        --xy-controls-button-border-color-props,
+        var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default))
+      );
+    color: var(
+      --xy-controls-button-color-props,
+      var(--xy-controls-button-color, var(--xy-controls-button-color-default))
+    );
+    cursor: pointer;
+    -webkit-user-select: none;
+       -moz-user-select: none;
+            user-select: none;
+  }
+.roseboard-root .react-flow__controls-button svg {
+      width: 100%;
+      max-width: 12px;
+      max-height: 12px;
+      fill: currentColor;
+    }
+.roseboard-root .react-flow__edge.updating .react-flow__edge-path {
+      stroke: #777;
+    }
+.roseboard-root .react-flow__edge-text {
+    font-size: 10px;
+  }
+.roseboard-root .react-flow__node.selectable:focus,
+  .roseboard-root .react-flow__node.selectable:focus-visible {
+    outline: none;
+  }
+.roseboard-root .react-flow__node-input,
+.roseboard-root .react-flow__node-default,
+.roseboard-root .react-flow__node-output,
+.roseboard-root .react-flow__node-group {
+  padding: 10px;
+  border-radius: var(--xy-node-border-radius, var(--xy-node-border-radius-default));
+  width: 150px;
+  font-size: 12px;
+  color: var(--xy-node-color, var(--xy-node-color-default));
+  text-align: center;
+  border: var(--xy-node-border, var(--xy-node-border-default));
+  background-color: var(--xy-node-background-color, var(--xy-node-background-color-default));
+}
+.roseboard-root .react-flow__node-input.selectable:hover, .roseboard-root .react-flow__node-default.selectable:hover, .roseboard-root .react-flow__node-output.selectable:hover, .roseboard-root .react-flow__node-group.selectable:hover {
+      box-shadow: var(--xy-node-boxshadow-hover, var(--xy-node-boxshadow-hover-default));
+    }
+.roseboard-root .react-flow__node-input.selectable.selected,
+    .roseboard-root .react-flow__node-input.selectable:focus,
+    .roseboard-root .react-flow__node-input.selectable:focus-visible,
+    .roseboard-root .react-flow__node-default.selectable.selected,
+    .roseboard-root .react-flow__node-default.selectable:focus,
+    .roseboard-root .react-flow__node-default.selectable:focus-visible,
+    .roseboard-root .react-flow__node-output.selectable.selected,
+    .roseboard-root .react-flow__node-output.selectable:focus,
+    .roseboard-root .react-flow__node-output.selectable:focus-visible,
+    .roseboard-root .react-flow__node-group.selectable.selected,
+    .roseboard-root .react-flow__node-group.selectable:focus,
+    .roseboard-root .react-flow__node-group.selectable:focus-visible {
+      box-shadow: var(--xy-node-boxshadow-selected, var(--xy-node-boxshadow-selected-default));
+    }
+.roseboard-root .react-flow__node-group {
+  background-color: var(--xy-node-group-background-color, var(--xy-node-group-background-color-default));
+}
+.roseboard-root .react-flow__nodesselection-rect,
+.roseboard-root .react-flow__selection {
+  background: var(--xy-selection-background-color, var(--xy-selection-background-color-default));
+  border: var(--xy-selection-border, var(--xy-selection-border-default));
+}
+.roseboard-root .react-flow__nodesselection-rect:focus,
+  .roseboard-root .react-flow__nodesselection-rect:focus-visible,
+  .roseboard-root .react-flow__selection:focus,
+  .roseboard-root .react-flow__selection:focus-visible {
+    outline: none;
+  }
+.roseboard-root .react-flow__controls-button:hover {
+      background: var(
+        --xy-controls-button-background-color-hover-props,
+        var(--xy-controls-button-background-color-hover, var(--xy-controls-button-background-color-hover-default))
+      );
+      color: var(
+        --xy-controls-button-color-hover-props,
+        var(--xy-controls-button-color-hover, var(--xy-controls-button-color-hover-default))
+      );
+    }
+.roseboard-root .react-flow__controls-button:disabled {
+      pointer-events: none;
+    }
+.roseboard-root .react-flow__controls-button:disabled svg {
+        fill-opacity: 0.4;
+      }
+.roseboard-root .react-flow__controls-button:last-child {
+    border-bottom: none;
+  }
+.roseboard-root .react-flow__controls.horizontal .react-flow__controls-button {
+    border-bottom: none;
+    border-right: 1px solid
+      var(
+        --xy-controls-button-border-color-props,
+        var(--xy-controls-button-border-color, var(--xy-controls-button-border-color-default))
+      );
+  }
+.roseboard-root .react-flow__controls.horizontal .react-flow__controls-button:last-child {
+    border-right: none;
+  }
+.roseboard-root .react-flow__resize-control {
+  position: absolute;
+}
+.roseboard-root .react-flow__resize-control.left,
+.roseboard-root .react-flow__resize-control.right {
+  cursor: ew-resize;
+}
+.roseboard-root .react-flow__resize-control.top,
+.roseboard-root .react-flow__resize-control.bottom {
+  cursor: ns-resize;
+}
+.roseboard-root .react-flow__resize-control.top.left,
+.roseboard-root .react-flow__resize-control.bottom.right {
+  cursor: nwse-resize;
+}
+.roseboard-root .react-flow__resize-control.bottom.left,
+.roseboard-root .react-flow__resize-control.top.right {
+  cursor: nesw-resize;
+}
+/* handle styles */
+.roseboard-root .react-flow__resize-control.handle {
+  width: 5px;
+  height: 5px;
+  border: 1px solid #fff;
+  border-radius: 1px;
+  background-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  translate: -50% -50%;
+}
+.roseboard-root .react-flow__resize-control.handle.left {
+  left: 0;
+  top: 50%;
+}
+.roseboard-root .react-flow__resize-control.handle.right {
+  left: 100%;
+  top: 50%;
+}
+.roseboard-root .react-flow__resize-control.handle.top {
+  left: 50%;
+  top: 0;
+}
+.roseboard-root .react-flow__resize-control.handle.bottom {
+  left: 50%;
+  top: 100%;
+}
+.roseboard-root .react-flow__resize-control.handle.top.left {
+  left: 0;
+}
+.roseboard-root .react-flow__resize-control.handle.bottom.left {
+  left: 0;
+}
+.roseboard-root .react-flow__resize-control.handle.top.right {
+  left: 100%;
+}
+.roseboard-root .react-flow__resize-control.handle.bottom.right {
+  left: 100%;
+}
+/* line styles */
+.roseboard-root .react-flow__resize-control.line {
+  border-color: var(--xy-resize-background-color, var(--xy-resize-background-color-default));
+  border-width: 0;
+  border-style: solid;
+}
+.roseboard-root .react-flow__resize-control.line.left,
+.roseboard-root .react-flow__resize-control.line.right {
+  width: 1px;
+  transform: translate(-50%, 0);
+  top: 0;
+  height: 100%;
+}
+.roseboard-root .react-flow__resize-control.line.left {
+  left: 0;
+  border-left-width: 1px;
+}
+.roseboard-root .react-flow__resize-control.line.right {
+  left: 100%;
+  border-right-width: 1px;
+}
+.roseboard-root .react-flow__resize-control.line.top,
+.roseboard-root .react-flow__resize-control.line.bottom {
+  height: 1px;
+  transform: translate(0, -50%);
+  left: 0;
+  width: 100%;
+}
+.roseboard-root .react-flow__resize-control.line.top {
+  top: 0;
+  border-top-width: 1px;
+}
+.roseboard-root .react-flow__resize-control.line.bottom {
+  border-bottom-width: 1px;
+  top: 100%;
+}
+.roseboard-root .react-flow__edge-textbg {
+  fill: var(--xy-edge-label-background-color, var(--xy-edge-label-background-color-default));
+}
+.roseboard-root .react-flow__edge-text {
+  fill: var(--xy-edge-label-color, var(--xy-edge-label-color-default));
+}
+
+/* Every selector is scoped to Roseboard, including the generated React Flow CSS. */
+.roseboard-view-content {
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: 100%;
+}
+.roseboard-root {
+  --rb-bg: #111113;
+  --rb-card: #19191d;
+  --rb-raised: #23232a;
+  --rb-hover: #2c2c34;
+  --rb-border: #32323b;
+  --rb-border-strong: #4a4a56;
+  --rb-text: #f5f5f7;
+  --rb-muted: #aaaab7;
+  --rb-faint: #8a8a9c;
+  --rb-pink: #f472b6;
+  --rb-pink-soft: #ffafd8;
+  --rb-rose: #fb7185;
+  --rb-rose-soft: #fda4af;
+  --rb-mint: #9fdcbf;
+  --rb-amber: #f6c76b;
+  --rb-sky: #8fc8f5;
+  --rb-violet: #c4a8f5;
+  --rb-slate: #b3bccc;
+  --rb-ink: #e8e8ef;
+  --rb-radius: 12px;
+  --rb-radius-sm: 8px;
+  --rb-shadow: 0 6px 16px #00000033;
+  --text-normal: var(--rb-text);
+  --text-muted: var(--rb-muted);
+  --background-primary: var(--rb-bg);
+  --background-secondary: var(--rb-card);
+  --interactive-normal: var(--rb-raised);
+  --interactive-hover: var(--rb-hover);
+  --interactive-accent: var(--rb-pink);
+  --text-on-accent: #111113;
+  --icon-size: 14px;
+  --icon-stroke: 1.75px;
+  color: var(--rb-text);
+  background: var(--rb-bg);
+  font-family:
+    var(--font-interface),
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  container-type: inline-size;
+  color-scheme: dark;
+  line-height: 1.5;
+  isolation: isolate;
+  -webkit-font-smoothing: antialiased;
+}
+.roseboard-root * {
+  box-sizing: border-box;
+}
+.roseboard-root .rb-icon {
+  display: inline-flex;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
+  color: inherit;
+}
+.roseboard-root .rb-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.roseboard-root .rb-icon-lg {
+  --icon-size: 18px;
+}
+.roseboard-root button,
+.roseboard-root input,
+.roseboard-root select,
+.roseboard-root textarea {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--rb-text);
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-sm);
+  background: var(--rb-card);
+  box-shadow: none;
+}
+.roseboard-root button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+.roseboard-root button:hover {
+  background: var(--rb-hover);
+  border-color: var(--rb-border-strong);
+}
+.roseboard-root button:active {
+  background: #35353f;
+}
+.roseboard-root button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.roseboard-root button.is-active,
+.roseboard-root .is-active {
+  background: #31232d;
+  color: var(--rb-pink-soft);
+  border-color: #7d4466;
+}
+.roseboard-root .rb-icon-button {
+  padding: 5px 7px;
+  min-width: 32px;
+  position: relative;
+}
+.roseboard-root input,
+.roseboard-root select,
+.roseboard-root textarea {
+  padding: 7px 10px;
+  min-height: 34px;
+  max-width: 100%;
+}
+.roseboard-root select {
+  appearance: none;
+  padding-right: 26px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--rb-muted) 50%),
+    linear-gradient(135deg, var(--rb-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 55%,
+    calc(100% - 10px) 55%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+}
+.roseboard-root input:focus,
+.roseboard-root textarea:focus,
+.roseboard-root select:focus {
+  border-color: var(--rb-pink);
+  outline: none;
+  box-shadow: 0 0 0 2px #f472b624;
+}
+.roseboard-root :focus-visible {
+  outline: 2px solid var(--rb-pink);
+  outline-offset: 2px;
+}
+.roseboard-root .rb-primary {
+  background: var(--rb-pink);
+  border-color: var(--rb-pink);
+  color: #171017;
+  font-weight: 650;
+}
+.roseboard-root .rb-primary:hover {
+  background: #f99fcb;
+  border-color: #f99fcb;
+}
+.roseboard-root .rb-danger {
+  color: var(--rb-rose-soft);
+  border-color: #643540;
+  margin-top: 8px;
+}
+.roseboard-root .rb-muted {
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-spacer {
+  flex: 1;
+}
+/* ---------- Toolbar ---------- */
+.roseboard-root .rb-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rb-border);
+  background: var(--rb-card);
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  z-index: 5;
+}
+.roseboard-root .rb-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 170px;
+  margin-right: 4px;
+}
+.roseboard-root .rb-brand strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  max-width: 320px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+.roseboard-root .rb-brand small {
+  display: block;
+  font-size: 10.5px;
+  color: var(--rb-muted);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+.roseboard-root .rb-logo {
+  color: var(--rb-pink);
+  font-size: 30px;
+  line-height: 1;
+  display: inline-flex;
+}
+.roseboard-root .rb-segment {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  background: var(--rb-bg);
+  border: 1px solid var(--rb-border);
+  border-radius: 9px;
+  padding: 3px;
+}
+.roseboard-root .rb-segment button {
+  border: 0;
+  background: transparent;
+  min-height: 26px;
+  padding: 3px 9px;
+}
+.roseboard-root .rb-segment button.is-active {
+  background: var(--rb-raised);
+  color: var(--rb-pink-soft);
+}
+.roseboard-root .rb-search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.roseboard-root .rb-search-wrap .rb-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--rb-faint);
+  pointer-events: none;
+}
+.roseboard-root .rb-search {
+  width: 190px;
+  padding-left: 28px;
+}
+.roseboard-root .rb-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--rb-muted);
+  white-space: nowrap;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.roseboard-root .rb-save-saved-locally {
+  color: var(--rb-mint);
+}
+.roseboard-root .rb-save-saving .rb-icon {
+  animation: rb-spin 1s linear infinite;
+}
+.roseboard-root .rb-save-conflict,
+.roseboard-root .rb-save-error {
+  color: var(--rb-rose-soft);
+  border-color: #643540;
+  background: #2a1a20;
+}
+.roseboard-root .rb-badge-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--rb-pink);
+  color: #171017;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+/* ---------- Notices ---------- */
+.roseboard-root .rb-notice {
+  padding: 10px 14px;
+  background: #30242a;
+  border-bottom: 1px solid #704250;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  white-space: pre-line;
+  z-index: 5;
+}
+.roseboard-root .rb-notice > span {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.roseboard-root .rb-notice > span .rb-icon {
+  margin-top: 3px;
+  color: var(--rb-rose-soft);
+}
+.roseboard-root .rb-notice > div {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.roseboard-root .rb-overlaps {
+  padding: 8px 14px;
+  background: #241f2a;
+  border-bottom: 1px solid #4d3f5c;
+  font-size: 12px;
+  z-index: 5;
+}
+.roseboard-root .rb-overlaps-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.roseboard-root .rb-overlaps-head > span {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--rb-violet);
+}
+.roseboard-root .rb-overlaps ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.roseboard-root .rb-overlaps li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-overlap-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+.roseboard-root .rb-overlap-actions button,
+.roseboard-root .rb-overlaps-head button {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+/* ---------- Workspace ---------- */
+.roseboard-root .rb-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.roseboard-root .rb-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  min-height: 0;
+}
+.roseboard-root .rb-createbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #25252d;
+  flex-shrink: 0;
+  background: #151518;
+}
+.roseboard-root .rb-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.roseboard-root.rb-hand .react-flow__pane {
+  cursor: grab;
+}
+.roseboard-root.rb-hand .react-flow__pane.dragging {
+  cursor: grabbing;
+}
+.roseboard-root .react-flow {
+  background: var(--rb-bg);
+  --xy-node-color: var(--rb-text);
+  --xy-node-background-color: var(--rb-card);
+  --xy-background-color: var(--rb-bg);
+  --xy-edge-label-color: var(--rb-muted);
+  --xy-edge-label-background-color: var(--rb-bg);
+  --xy-minimap-background-color: var(--rb-card);
+  --xy-attribution-background-color: var(--rb-card);
+}
+/* ---------- Cards ---------- */
+.roseboard-root .react-flow__node-card {
+  border-radius: var(--rb-radius);
+  border: 1px solid var(--rb-border);
+  background: var(--rb-card);
+  box-shadow: var(--rb-shadow);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.roseboard-root .react-flow__node-card:hover {
+  border-color: var(--rb-border-strong);
+}
+.roseboard-root .react-flow__node-card.selected {
+  border-color: var(--rb-pink);
+  box-shadow:
+    0 0 0 1px var(--rb-pink),
+    var(--rb-shadow);
+}
+.roseboard-root.rb-zoom-low .react-flow__node-card {
+  box-shadow: none;
+  transition: none;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame) {
+  background: #23232a28;
+  box-shadow: none;
+  border: 1px dashed #59515f;
+  pointer-events: none;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-rose) {
+  background: #f472b60c;
+  border-color: #7d446688;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-amber) {
+  background: #f6c76b0c;
+  border-color: #8a6f2f88;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-mint) {
+  background: #9fdcbf0c;
+  border-color: #3e6b5488;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-sky) {
+  background: #8fc8f50c;
+  border-color: #3b5f7c88;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-violet) {
+  background: #c4a8f50c;
+  border-color: #5c4a7c88;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame.rb-tint-slate) {
+  background: #b3bccc0c;
+  border-color: #55606e88;
+}
+.roseboard-root .react-flow__node-card:has(.rb-card-frame) .rb-frame-label,
+.roseboard-root .react-flow__node-card:has(.rb-card-frame) .react-flow__resize-control,
+.roseboard-root .react-flow__node-card:has(.rb-card-frame) .react-flow__handle {
+  pointer-events: auto;
+}
+/*
+ * The card must stay non-positioned: connection handles and resize controls are absolutely
+ * positioned children that hang over its edges, and `overflow: hidden` would clip them if the
+ * card became their containing block. The colour stripe is therefore an inset shadow.
+ */
+.roseboard-root .rb-card {
+  height: 100%;
+  padding: 14px 16px;
+  overflow: hidden;
+  border-radius: var(--rb-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.roseboard-root .rb-card.rb-tint-rose {
+  box-shadow: inset 3px 0 0 var(--rb-pink);
+}
+.roseboard-root .rb-card.rb-tint-amber {
+  box-shadow: inset 3px 0 0 var(--rb-amber);
+}
+.roseboard-root .rb-card.rb-tint-mint {
+  box-shadow: inset 3px 0 0 var(--rb-mint);
+}
+.roseboard-root .rb-card.rb-tint-sky {
+  box-shadow: inset 3px 0 0 var(--rb-sky);
+}
+.roseboard-root .rb-card.rb-tint-violet {
+  box-shadow: inset 3px 0 0 var(--rb-violet);
+}
+.roseboard-root .rb-card.rb-tint-slate {
+  box-shadow: inset 3px 0 0 var(--rb-slate);
+}
+.roseboard-root .rb-card.rb-recent {
+  animation: rb-recent 1.6s ease-out 2;
+}
+.roseboard-root .rb-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  padding: 2px 7px;
+  border: 1px solid #3d3d47;
+  border-radius: 999px;
+  color: #c4c4cf;
+  white-space: nowrap;
+  --icon-size: 11px;
+  line-height: 1.4;
+}
+.roseboard-root .rb-status-backlog {
+  color: #b7b7c4;
+  border-style: dashed;
+}
+.roseboard-root .rb-status-todo {
+  color: #d4d4de;
+}
+.roseboard-root .rb-status-doing {
+  color: var(--rb-pink-soft);
+  background: #f472b612;
+  border-color: #6b3d57;
+}
+.roseboard-root .rb-status-done {
+  color: var(--rb-mint);
+  border-color: #3e5b4e;
+  background: #9fdcbf0e;
+}
+.roseboard-root .rb-priority {
+  text-transform: capitalize;
+}
+.roseboard-root .rb-priority-high {
+  color: var(--rb-rose-soft);
+  border-color: #6b3d47;
+}
+.roseboard-root .rb-priority-medium {
+  color: var(--rb-amber);
+  border-color: #6b5a2f;
+}
+.roseboard-root .rb-priority-low {
+  color: var(--rb-sky);
+  border-color: #3d5468;
+}
+.roseboard-root .rb-chip-blocked {
+  color: var(--rb-rose-soft);
+  border-color: #643540;
+  background: #2a1a20;
+}
+.roseboard-root .rb-card-title {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.35;
+  font-size: 15px;
+}
+.roseboard-root .rb-card-title strong {
+  font-weight: 560;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  letter-spacing: -0.005em;
+}
+.roseboard-root .rb-complete {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  min-height: 22px;
+  width: 22px;
+  flex-shrink: 0;
+  color: var(--rb-faint);
+  --icon-size: 19px;
+  margin-top: 1px;
+}
+.roseboard-root .rb-complete:hover {
+  color: var(--rb-pink-soft);
+  background: transparent;
+}
+.roseboard-root .rb-done .rb-complete {
+  color: var(--rb-mint);
+}
+.roseboard-root .rb-done .rb-card-title strong,
+.roseboard-root .rb-done .rb-list-title strong,
+.roseboard-root .rb-done .rb-kanban-title strong {
+  color: var(--rb-muted);
+  text-decoration: line-through;
+  text-decoration-color: #5a5a66;
+}
+.roseboard-root .rb-card-meta {
+  display: flex;
+  gap: 6px 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 11px;
+  color: var(--rb-muted);
+  margin-top: auto;
+}
+.roseboard-root .rb-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  --icon-size: 12px;
+}
+.roseboard-root .rb-overdue {
+  color: var(--rb-rose-soft);
+}
+.roseboard-root .rb-progress-bar {
+  display: inline-block;
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: #33333d;
+  overflow: hidden;
+}
+.roseboard-root .rb-progress-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--rb-pink);
+  border-radius: 2px;
+}
+.roseboard-root .rb-done .rb-progress-bar > span {
+  background: var(--rb-mint);
+}
+.roseboard-root .rb-tags {
+  display: flex;
+  flex-basis: 100%;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 10.5px;
+}
+.roseboard-root .rb-tag {
+  color: #bcb3c0;
+  background: #26232a;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.roseboard-root .rb-note-link {
+  font-size: 11px;
+  padding: 0;
+  border: 0;
+  min-height: 20px;
+  background: none;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-note-link:hover {
+  color: var(--rb-pink-soft);
+  background: none;
+}
+.roseboard-root .rb-inline {
+  width: 100%;
+  min-height: 30px;
+  padding: 3px 6px;
+  font-size: inherit;
+  font-weight: 560;
+  line-height: 1.35;
+  background: var(--rb-bg);
+  border-color: var(--rb-pink);
+}
+.roseboard-root textarea.rb-inline {
+  font-weight: 400;
+  font-size: 13px;
+  resize: none;
+  flex: 1;
+}
+.roseboard-root .rb-card-frame {
+  pointer-events: none;
+  padding: 10px 14px;
+}
+.roseboard-root .rb-card-sticky {
+  background: #262128;
+  border-top: 3px solid #b4769b;
+}
+.roseboard-root .rb-card-sticky.rb-tint-amber {
+  background: #2a261f;
+  border-top-color: var(--rb-amber);
+}
+.roseboard-root .rb-card-sticky.rb-tint-mint {
+  background: #1f2924;
+  border-top-color: var(--rb-mint);
+}
+.roseboard-root .rb-card-sticky.rb-tint-sky {
+  background: #1f262c;
+  border-top-color: var(--rb-sky);
+}
+.roseboard-root .rb-card-sticky.rb-tint-violet {
+  background: #25212d;
+  border-top-color: var(--rb-violet);
+}
+.roseboard-root .rb-card-sticky.rb-tint-slate {
+  background: #22242a;
+  border-top-color: var(--rb-slate);
+}
+.roseboard-root .rb-card-sticky.rb-tint-rose,
+.roseboard-root .rb-card-sticky.rb-tint-amber,
+.roseboard-root .rb-card-sticky.rb-tint-mint,
+.roseboard-root .rb-card-sticky.rb-tint-sky,
+.roseboard-root .rb-card-sticky.rb-tint-violet,
+.roseboard-root .rb-card-sticky.rb-tint-slate {
+  box-shadow: none;
+}
+.roseboard-root .rb-card-head-sticky {
+  opacity: 0.7;
+}
+.roseboard-root .rb-sticky-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.roseboard-root .rb-markdown {
+  overflow: auto;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+  max-height: 100%;
+}
+.roseboard-root .rb-markdown p {
+  margin: 0 0 8px;
+}
+.roseboard-root .rb-markdown h1,
+.roseboard-root .rb-markdown h2,
+.roseboard-root .rb-markdown h3 {
+  font-size: 15px;
+  margin: 8px 0;
+}
+.roseboard-root .rb-markdown a,
+.roseboard-root .rb-text-link {
+  color: var(--rb-pink);
+}
+.roseboard-root .rb-markdown code {
+  background: #303039;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.roseboard-root .rb-markdown pre {
+  white-space: pre-wrap;
+}
+.roseboard-root .rb-markdown ul,
+.roseboard-root .rb-markdown ol {
+  padding-left: 20px;
+  margin: 0 0 8px;
+}
+.roseboard-root .rb-text-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  white-space: normal;
+  text-decoration: underline;
+  display: inline;
+}
+.roseboard-root .rb-frame-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  color: #d9c9de;
+  font-size: 13px;
+  cursor: grab;
+  min-height: 32px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin: -4px -6px 0;
+}
+.roseboard-root .rb-frame-label:hover {
+  background: #ffffff0a;
+}
+.roseboard-root .rb-frame-label strong {
+  font-weight: 560;
+}
+.roseboard-root .rb-frame-label span {
+  color: var(--rb-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.roseboard-root .rb-path {
+  font-size: 11px;
+  color: var(--rb-muted);
+  overflow-wrap: anywhere;
+}
+.roseboard-root .react-flow__handle {
+  width: 12px;
+  height: 12px;
+  background: #656575;
+  border: 2px solid var(--rb-card);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.roseboard-root .react-flow__node-card:hover .react-flow__handle,
+.roseboard-root .react-flow__node-card.selected .react-flow__handle,
+.roseboard-root .react-flow.connecting .react-flow__handle {
+  opacity: 1;
+}
+.roseboard-root .react-flow__handle:hover {
+  background: var(--rb-pink);
+  transform: scale(1.25) translate(-40%, -40%);
+}
+.roseboard-root .react-flow__handle-left:hover {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+.roseboard-root .react-flow__handle-right:hover {
+  transform: translate(50%, -50%) scale(1.25);
+}
+.roseboard-root .react-flow__handle-top:hover {
+  transform: translate(-50%, -50%) scale(1.25);
+}
+.roseboard-root .react-flow__handle-bottom:hover {
+  transform: translate(-50%, 50%) scale(1.25);
+}
+.roseboard-root .react-flow__resize-control {
+  border-color: var(--rb-pink);
+  background-color: var(--rb-pink);
+}
+.roseboard-root .react-flow__resize-control.handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+/* ---------- Edges ---------- */
+.roseboard-root .react-flow__edge.rb-relation .react-flow__edge-path {
+  stroke: #8f8f9f;
+  stroke-width: 1.5;
+}
+.roseboard-root .react-flow__edge.rb-dependency .react-flow__edge-path {
+  stroke: var(--rb-pink);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 5;
+}
+.roseboard-root .react-flow__edge.rb-dependency-done .react-flow__edge-path {
+  opacity: 0.45;
+}
+.roseboard-root .react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 2.5;
+}
+.roseboard-root .react-flow__edge.selected .react-flow__edge-path {
+  stroke: #ffd3e9;
+  stroke-width: 3;
+}
+.roseboard-root .react-flow__edge-text {
+  font-size: 10px;
+  fill: #d4c4cf;
+}
+.roseboard-root .react-flow__edge-textbg {
+  fill: #19191d;
+}
+.roseboard-root .react-flow__selection,
+.roseboard-root .react-flow__nodesselection-rect {
+  border: 1px solid var(--rb-pink);
+  background: #f472b613;
+}
+.roseboard-root .react-flow__minimap {
+  width: 160px;
+  height: 110px;
+  border: 1px solid var(--rb-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 16px 16px 58px;
+}
+.roseboard-root .react-flow__attribution {
+  font-size: 8px;
+  opacity: 0.65;
+  right: 8px;
+  bottom: 4px;
+}
+.roseboard-root .react-flow__attribution a {
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-dim {
+  opacity: 0.22;
+}
+/* ---------- Ink ---------- */
+.roseboard-root .rb-ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+.roseboard-root .rb-stroke {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.roseboard-root .rb-stroke-pending {
+  opacity: 0.25;
+}
+.roseboard-root .rb-stroke-live {
+  opacity: 0.92;
+}
+.roseboard-root .rb-draw-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+}
+.roseboard-root .rb-draw-overlay.rb-tool-eraser {
+  cursor: cell;
+}
+.roseboard-root .rb-inkbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rb-border);
+  background: var(--rb-card);
+  font-size: 11px;
+  color: var(--rb-muted);
+  flex-shrink: 0;
+}
+.roseboard-root .rb-inkbar .rb-segment button {
+  gap: 8px;
+}
+.roseboard-root .rb-width-sample {
+  display: inline-block;
+  width: 22px;
+  border-radius: 999px;
+  background: currentColor;
+}
+/* ---------- Floating controls ---------- */
+.roseboard-root .rb-navigation,
+.roseboard-root .rb-selectionbar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: #19191df2;
+  border: 1px solid var(--rb-border);
+  border-radius: 10px;
+  box-shadow: 0 4px 18px #0006;
+  backdrop-filter: blur(6px);
+  z-index: 5;
+}
+.roseboard-root .rb-navigation {
+  bottom: 18px;
+  left: 16px;
+}
+.roseboard-root .rb-navigation button,
+.roseboard-root .rb-selectionbar button {
+  border: 0;
+  background: transparent;
+  padding: 5px 8px;
+  min-width: 32px;
+  min-height: 30px;
+}
+.roseboard-root .rb-navigation button:hover,
+.roseboard-root .rb-selectionbar button:hover {
+  background: #303039;
+}
+.roseboard-root .rb-navigation button.is-active {
+  background: #31232d;
+}
+.roseboard-root .rb-selectionbar {
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  gap: 4px;
+  padding: 4px 6px;
+}
+.roseboard-root .rb-selectionbar > span:first-child {
+  font-size: 11px;
+  color: var(--rb-muted);
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.roseboard-root .rb-swatches {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.roseboard-root .rb-swatch {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  min-width: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  --icon-size: 12px;
+}
+.roseboard-root .rb-swatches-mini .rb-swatch {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  min-width: 18px;
+}
+.roseboard-root .rb-swatch.is-active,
+.roseboard-root .rb-swatch:hover {
+  border-color: var(--rb-text);
+}
+.roseboard-root .rb-swatch-none {
+  background: var(--rb-raised);
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-swatch-rose {
+  background: var(--rb-pink);
+}
+.roseboard-root .rb-swatch-amber {
+  background: var(--rb-amber);
+}
+.roseboard-root .rb-swatch-mint {
+  background: var(--rb-mint);
+}
+.roseboard-root .rb-swatch-sky {
+  background: var(--rb-sky);
+}
+.roseboard-root .rb-swatch-violet {
+  background: var(--rb-violet);
+}
+.roseboard-root .rb-swatch-slate {
+  background: var(--rb-slate);
+}
+.roseboard-root .rb-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 14px;
+  font-size: 10.5px;
+  color: var(--rb-faint);
+  border-top: 1px solid #222229;
+  flex-shrink: 0;
+}
+.roseboard-root .rb-empty {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  transform: translate(-50%, -35%);
+  text-align: center;
+  width: min(430px, 90%);
+  pointer-events: none;
+}
+.roseboard-root .rb-empty > span {
+  font-size: 40px;
+  color: #be729b;
+  display: inline-flex;
+}
+.roseboard-root .rb-empty > span svg {
+  width: 48px;
+  height: 48px;
+}
+.roseboard-root .rb-empty h2 {
+  font-size: 23px;
+  font-weight: 500;
+  color: var(--rb-text);
+  margin: 16px 0 8px;
+}
+.roseboard-root .rb-empty p {
+  color: var(--rb-muted);
+  line-height: 1.8;
+}
+.roseboard-root .rb-empty button {
+  pointer-events: auto;
+}
+/* ---------- Inspector & activity ---------- */
+.roseboard-root .rb-inspector {
+  width: 312px;
+  flex-shrink: 0;
+  background: var(--rb-card);
+  border-left: 1px solid var(--rb-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 6;
+  min-height: 0;
+}
+.roseboard-root .rb-inspector-heading {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rb-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 560;
+  font-size: 12px;
+}
+.roseboard-root .rb-inspector-heading > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.roseboard-root .rb-inspector-heading .rb-icon-button {
+  border: 0;
+  min-width: 28px;
+  min-height: 28px;
+}
+.roseboard-root .rb-inspector-body {
+  padding: 14px;
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.roseboard-root fieldset {
+  border: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.roseboard-root label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--rb-muted);
+  min-width: 0;
+}
+.roseboard-root .rb-inline-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.roseboard-root .rb-field-row {
+  display: flex;
+  gap: 8px;
+}
+.roseboard-root .rb-field-row > * {
+  flex: 1;
+  min-width: 0;
+}
+.roseboard-root .rb-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.roseboard-root .rb-select-wrap .rb-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--rb-muted);
+  pointer-events: none;
+}
+.roseboard-root .rb-select-wrap select {
+  width: 100%;
+  padding-left: 30px;
+  text-transform: capitalize;
+}
+.roseboard-root .rb-quick-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.roseboard-root .rb-quick-row button {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.roseboard-root textarea {
+  resize: vertical;
+  width: 100%;
+  line-height: 1.5;
+}
+.roseboard-root .rb-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--rb-muted);
+  gap: 8px;
+  border-top: 1px solid #303038;
+  padding-top: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 560;
+}
+.roseboard-root .rb-section-title button {
+  font-size: 10px;
+  min-height: 26px;
+  padding: 2px 7px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.roseboard-root .rb-check-item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.roseboard-root .rb-check-item input[type='checkbox'] {
+  appearance: auto;
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  flex-shrink: 0;
+  accent-color: var(--rb-pink);
+}
+.roseboard-root .rb-check-item input[type='text'],
+.roseboard-root .rb-check-item input:not([type]) {
+  width: 100%;
+  min-width: 0;
+}
+.roseboard-root .rb-check-item input.rb-struck {
+  text-decoration: line-through;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-check-item .rb-icon-button {
+  border: 0;
+  padding: 4px;
+  min-width: 26px;
+}
+.roseboard-root .rb-check-new .rb-icon {
+  color: var(--rb-faint);
+  margin: 0 3px;
+}
+.roseboard-root .rb-dependency {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.roseboard-root .rb-dependency > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.roseboard-root .rb-dependency button {
+  border: 0;
+}
+.roseboard-root .rb-coordinate-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.roseboard-root .rb-stamp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  margin: 0;
+}
+.roseboard-root .rb-shortcuts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 11px;
+}
+.roseboard-root .rb-shortcuts dt {
+  color: var(--rb-text);
+  font-family: var(--font-monospace, ui-monospace, monospace);
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+.roseboard-root .rb-shortcuts dd {
+  margin: 0;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-activity-entry {
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-sm);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.roseboard-root .rb-activity-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.roseboard-root .rb-activity-head span {
+  color: var(--rb-faint);
+  font-size: 11px;
+}
+.roseboard-root .rb-activity-entry ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-activity-entry li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* ---------- Bars ---------- */
+.roseboard-root .rb-filterbar,
+.roseboard-root .rb-connectbar,
+.roseboard-root .rb-tray,
+.roseboard-root .rb-focusbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--rb-border);
+  background: var(--rb-card);
+  font-size: 11px;
+  color: var(--rb-muted);
+  flex-shrink: 0;
+}
+.roseboard-root .rb-filterbar input {
+  width: 110px;
+}
+.roseboard-root .rb-filterbar select {
+  max-width: 165px;
+}
+.roseboard-root .rb-connectbar select {
+  max-width: 220px;
+}
+.roseboard-root .rb-connectbar input {
+  width: 150px;
+}
+.roseboard-root .rb-tray {
+  max-height: 150px;
+  overflow: auto;
+}
+.roseboard-root .rb-focusbar {
+  color: var(--rb-pink-soft);
+}
+/* ---------- List ---------- */
+.roseboard-root .rb-list {
+  padding: 20px 24px;
+  flex: 1;
+  overflow: auto;
+}
+.roseboard-root .rb-list-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--rb-muted);
+  font-size: 12px;
+}
+.roseboard-root .rb-list-heading strong {
+  font-size: 18px;
+  color: var(--rb-text);
+}
+.roseboard-root .rb-list-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--rb-border);
+  padding: 10px 8px;
+  font-size: 12px;
+  border-radius: var(--rb-radius-sm);
+}
+.roseboard-root .rb-list-row:hover {
+  background: #ffffff05;
+}
+.roseboard-root .rb-list-row.is-active {
+  background: #31232d;
+  border-color: #7d4466;
+}
+.roseboard-root .rb-list-title {
+  flex: 1;
+  min-width: 100px;
+  white-space: normal;
+  text-align: left;
+  background: none;
+  border: 0;
+  justify-content: flex-start;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+.roseboard-root .rb-list-title strong {
+  font-weight: 500;
+}
+.roseboard-root .rb-list-title small {
+  display: block;
+  color: var(--rb-muted);
+  font-size: 10px;
+}
+.roseboard-root .rb-list-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 70px;
+  --icon-size: 12px;
+}
+.roseboard-root .rb-list-due {
+  width: 84px;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-list-due.rb-overdue {
+  color: var(--rb-rose-soft);
+}
+/* ---------- Kanban ---------- */
+.roseboard-root .rb-kanban {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 14px;
+  overflow: auto;
+}
+.roseboard-root .rb-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #151518;
+  border: 1px solid #25252d;
+  border-radius: var(--rb-radius);
+  transition: border-color 120ms ease;
+}
+.roseboard-root .rb-column.is-over {
+  border-color: var(--rb-pink);
+  background: #1c161b;
+}
+.roseboard-root .rb-column-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #25252d;
+}
+.roseboard-root .rb-column-count {
+  color: var(--rb-faint);
+  font-size: 11px;
+  flex: 1;
+}
+.roseboard-root .rb-column-head .rb-icon-button {
+  border: 0;
+  min-width: 26px;
+  min-height: 26px;
+}
+.roseboard-root .rb-column-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  flex: 1;
+  min-height: 80px;
+}
+.roseboard-root .rb-column-empty {
+  color: var(--rb-faint);
+  font-size: 11px;
+  text-align: center;
+  padding: 18px 0;
+  border: 1px dashed #2c2c35;
+  border-radius: var(--rb-radius-sm);
+  margin: 0;
+}
+.roseboard-root .rb-kanban-card {
+  background: var(--rb-card);
+  border: 1px solid var(--rb-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: grab;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    opacity 120ms ease;
+}
+.roseboard-root .rb-kanban-card:hover {
+  border-color: var(--rb-border-strong);
+  box-shadow: var(--rb-shadow);
+}
+.roseboard-root .rb-kanban-card.is-active {
+  border-color: var(--rb-pink);
+}
+.roseboard-root .rb-kanban-card.is-dragging {
+  opacity: 0.45;
+}
+.roseboard-root .rb-kanban-title {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.roseboard-root .rb-kanban-title strong {
+  font-weight: 540;
+  flex: 1;
+  word-break: break-word;
+}
+.roseboard-root .rb-kanban-title .rb-complete {
+  --icon-size: 17px;
+}
+.roseboard-root .rb-kanban-title .rb-icon-button {
+  border: 0;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px;
+}
+/* ---------- Preview & dialogs ---------- */
+.roseboard-preview-shell {
+  height: 700px;
+  min-height: 320px;
+  max-height: 1600px;
+  resize: vertical;
+  overflow: hidden;
+  border: 1px solid #32323b;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  margin: 16px 0;
+}
+.roseboard-preview-shell > .roseboard-preview-open {
+  flex-shrink: 0;
+  background: #23232a;
+  color: #f5f5f7;
+  padding: 8px 16px;
+  border: 0;
+  border-top: 1px solid #32323b;
+  cursor: pointer;
+  min-height: 40px;
+}
+.roseboard-preview-mount {
+  min-height: 0;
+  flex: 1;
+}
+.roseboard-root.rb-preview .rb-card {
+  pointer-events: none;
+}
+.roseboard-root.rb-preview .rb-brand {
+  min-width: 0;
+}
+.roseboard-dialog input {
+  width: 100%;
+  margin-bottom: 16px;
+}
+.roseboard-dialog .roseboard-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+/* ---------- Motion ---------- */
+@keyframes rb-recent {
+  0% {
+    box-shadow: inset 0 0 0 2px var(--rb-pink);
+    background-color: #f472b618;
+  }
+  100% {
+    box-shadow: inset 0 0 0 0 transparent;
+    background-color: transparent;
+  }
+}
+@keyframes rb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* ---------- Responsive ---------- */
+@container (max-width: 1100px) {
+  .roseboard-root .rb-kanban {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+@container (max-width: 900px) {
+  .roseboard-root .rb-inspector {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(340px, 94%);
+    box-shadow: -12px 0 40px #0008;
+  }
+  .roseboard-root .rb-toolbar {
+    padding: 8px;
+    gap: 6px;
+  }
+  .roseboard-root .rb-toolbar .rb-brand {
+    flex: 1;
+    min-width: 170px;
+  }
+  .roseboard-root .rb-brand small {
+    max-width: 220px;
+  }
+  .roseboard-root .rb-createbar {
+    padding: 8px;
+  }
+  .roseboard-root .rb-footer span:last-child {
+    display: none;
+  }
+  .roseboard-root .rb-selectionbar {
+    bottom: 64px;
+  }
+}
+@container (max-width: 600px) {
+  .roseboard-root button,
+  .roseboard-root input,
+  .roseboard-root select {
+    min-height: 44px;
+  }
+  .roseboard-root .rb-segment button {
+    min-height: 36px;
+  }
+  .roseboard-root .rb-toolbar .rb-search {
+    width: 120px;
+    flex: 1;
+  }
+  .roseboard-root .rb-toolbar .rb-search-wrap {
+    flex: 1;
+  }
+  .roseboard-root .rb-toolbar .rb-brand {
+    flex-basis: calc(100% - 120px);
+  }
+  .roseboard-root .rb-save {
+    padding: 0 4px;
+  }
+  .roseboard-root .rb-createbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-height: 64px;
+  }
+  .roseboard-root .rb-createbar > * {
+    flex-shrink: 0;
+  }
+  .roseboard-root .rb-kanban {
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(160px, auto);
+  }
+  .roseboard-root .rb-list {
+    padding: 12px;
+  }
+  .roseboard-root .rb-list-row {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .roseboard-root .rb-list-title {
+    flex-basis: 70%;
+  }
+  .roseboard-root .rb-list-priority {
+    display: none;
+  }
+  .roseboard-root .rb-list-heading span {
+    display: none;
+  }
+  .roseboard-root .rb-navigation {
+    max-width: calc(100% - 16px);
+    left: 8px;
+    overflow: auto;
+    bottom: 12px;
+  }
+  .roseboard-root .rb-navigation button {
+    padding: 4px 8px;
+    min-height: 36px;
+  }
+  .roseboard-root .rb-selectionbar {
+    max-width: calc(100% - 16px);
+    overflow: auto;
+  }
+  .roseboard-root .rb-footer {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+  .roseboard-root .rb-notice {
+    flex-direction: column;
+    align-items: flex-start;
+    max-height: 180px;
+    overflow: auto;
+  }
+  .roseboard-root .react-flow__handle {
+    width: 18px;
+    height: 18px;
+    opacity: 1;
+  }
+  .roseboard-root .rb-inspector {
+    width: 100%;
+    top: 12%;
+    border-top: 1px solid #59515f;
+    border-radius: 16px 16px 0 0;
+  }
+  .roseboard-root .rb-complete {
+    min-height: 30px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .roseboard-root * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
