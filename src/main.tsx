@@ -448,7 +448,7 @@ export default class RoseboardPlugin extends Plugin {
     if (file.extension !== 'md') throw new Error('Roseboard sources are Markdown notes.');
     const leaf = this.app.workspace.getLeaf('tab');
     await leaf.setViewState({ type: VIEW, state: { path }, active: true });
-    await this.app.workspace.revealLeaf(leaf);
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
   }
   private async openActive() {
     const active = this.app.workspace.getActiveFile();

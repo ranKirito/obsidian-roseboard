@@ -1,10 +1,10 @@
-# Roseboard 1.4.0 — implementation and test report
+# Roseboard 1.4 — implementation and test report
 
-Date: 2026-09-20. Branch: `v1.4-canvas-workspace`, based on 1.3.0 (`28bdd6b`).
+Compatibility-fix validation, 2026-09-21, on `main`: **91/91 automated checks and 55/55 actual Obsidian scenarios pass** (34 canvas regressions plus 21 document, planner, toolbar and renderer-security scenarios). Both integration reports contain zero captured renderer errors. TypeScript checking and production bundling pass. These fixes are not yet published as a release.
 
-**Final packaged build: 91/91 automated checks and 54/54 actual Obsidian scenarios pass** (34 existing regression scenarios plus 20 document, planner and toolbar scenarios). Both integration reports contain zero captured renderer errors. Strict TypeScript checking, production bundling, license generation and packaging pass. The release ZIP, repository runtime files and isolated test installation match byte-for-byte; hashes are in `release-verification.json`.
+The renderer-security scenario exercises script resource initialization, module initialization, ordinary script elements and async script elements; all four are rejected, with no script inserted and no network request. The build transform in `scripts/restrict-react-dom.mjs` removes these unused capabilities from the pinned React renderer and rejects unexpected dependency changes. It retains dependency license comments.
 
-Public distribution check, 2026-09-21: a clean `npm ci`, all 91 automated checks and `npm run build` passed in the public repository. The rebuilt runtime files match the previously tested 1.4.0 release byte-for-byte. The 54 integration scenarios below describe the original release validation, not a second run.
+The original 1.4.0 release passed 91 automated checks and 54 integration scenarios on 2026-09-20. Its historical package hashes remain in `release-verification.json`; they do not describe the new unpublished bundle.
 
 ## Implemented in 1.4
 

@@ -2,6 +2,8 @@ import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
 import { readFile, writeFile, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
+import { build } from 'esbuild';
+import { restrictedReactDOM } from './restrict-react-dom.mjs';
 const runtime = JSON.parse(await readFile('.test-runtime/runtime.json', 'utf8'));
 const browser = await chromium.connectOverCDP(`http://127.0.0.1:${runtime.port}`);
 const page = browser.contexts()[0].pages()[0];
@@ -168,6 +170,59 @@ try {
     { path, notePath, fixture, note },
   );
   await root().locator('.rb-brand strong').waitFor();
+  await test('The bundled renderer rejects script loading and script elements without network requests', async () => {
+    const fixture = await build({
+      stdin: {
+        contents:
+          'export { createRoot } from "react-dom/client"; export { preinit, preinitModule } from "react-dom"; export { createElement } from "react";',
+        resolveDir: process.cwd(),
+      },
+      bundle: true,
+      platform: 'browser',
+      format: 'cjs',
+      define: { 'process.env.NODE_ENV': '"production"' },
+      plugins: [restrictedReactDOM],
+      write: false,
+    });
+    const result = await page.evaluate(async (code) => {
+      const module = { exports: {} };
+      new Function('module', 'exports', code)(module, module.exports);
+      const renderer = module.exports;
+      const messages = [];
+      const url = 'https://roseboard-test.invalid/blocked-script.js';
+      for (const name of ['preinit', 'preinitModule']) {
+        try {
+          renderer[name](url, { as: 'script' });
+          messages.push('Not blocked');
+        } catch (error) {
+          messages.push(error.message);
+        }
+      }
+      for (const async of [false, true]) {
+        const container = document.body.appendChild(document.createElement('div'));
+        let root;
+        let timer;
+        try {
+          messages.push(
+            await new Promise((resolve) => {
+              timer = window.setTimeout(() => resolve('Not blocked'), 2000);
+              root = renderer.createRoot(container, { onUncaughtError: (error) => resolve(error.message) });
+              root.render(renderer.createElement('script', { src: url, async }));
+            }),
+          );
+        } finally {
+          window.clearTimeout(timer);
+          root?.unmount();
+          container.remove();
+        }
+      }
+      return { messages, scripts: [...document.scripts].filter((script) => script.src === url).length };
+    }, fixture.outputFiles[0].text);
+    assert.equal(result.messages.length, 4);
+    assert.ok(result.messages.every((message) => message.includes('Roseboard does not support script')));
+    assert.equal(result.scripts, 0);
+    assert.equal(requests.length, 0);
+  });
   await test('Read expands in place; scrolling stays inside the document and the board source is unchanged', async () => {
     await root().getByLabel('Reset zoom', { exact: true }).click();
     const before = JSON.stringify(await board());

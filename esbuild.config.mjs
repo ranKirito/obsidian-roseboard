@@ -2,6 +2,7 @@ import esbuild from 'esbuild';
 import { readFile, writeFile } from 'node:fs/promises';
 import postcss from 'postcss';
 import prefixer from 'postcss-prefix-selector';
+import { restrictedReactDOM } from './scripts/restrict-react-dom.mjs';
 const watch = process.argv.includes('--watch');
 async function css() {
   const base = (await readFile('node_modules/@xyflow/react/dist/style.css', 'utf8')).replace(
@@ -25,6 +26,7 @@ const context = await esbuild.context({
   define: { 'process.env.NODE_ENV': JSON.stringify(watch ? 'development' : 'production') },
   legalComments: 'eof',
   plugins: [
+    restrictedReactDOM,
     {
       name: 'styles',
       setup(build) {

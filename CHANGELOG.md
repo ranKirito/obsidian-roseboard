@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — Community Directory compatibility
+
+- Use the public workspace activation API available in the declared minimum Obsidian version and Obsidian’s CSS helper for inspector sizing.
+- Remove script-element and script-resource creation from the bundled React renderer. The public, deterministic build transform fails if the pinned renderer changes unexpectedly. Existing Markdown rendering remains restricted.
+- Verification: 91 automated tests and 55 isolated desktop Obsidian scenarios pass, including four blocked renderer script paths with no network requests. Minimum-version, physical mobile and peer-device sync testing remain unavailable.
+
 ## Distribution — 2026-09-21
 
 - Consolidated development onto main and published the tested 1.4.0 build in the public plugin repository. Added installation links and structured feedback forms, and published the Community Directory listing for automated review. Version 1.4.0 is the sole supported downloadable release; older work remains in Git history.

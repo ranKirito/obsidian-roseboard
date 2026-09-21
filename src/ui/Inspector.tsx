@@ -63,8 +63,8 @@ export function Inspector({
   useEffect(() => {
     const el = description.current;
     if (el) {
-      el.style.height = 'auto';
-      el.style.height = `${Math.min(el.scrollHeight + 2, 360)}px`;
+      el.setCssStyles({ height: 'auto' });
+      el.setCssStyles({ height: `${Math.min(el.scrollHeight + 2, 360)}px` });
     }
   }, [task?.description, tab]);
   const updateTask = (patch: Partial<Task>, key = '') =>
