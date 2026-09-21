@@ -1,9 +1,9 @@
 {
   "id": "roseboard",
   "name": "Roseboard",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "minAppVersion": "1.6.0",
-  "description": "A local-first visual task canvas with freehand ink. Markdown source, shared task records, structural merging of changes from other devices, and careful conflict recovery.",
+  "description": "A visual task canvas with document previews, daily planning, calendars, freehand ink, and collaboration through your vault sync.",
   "author": "ranKirito",
   "authorUrl": "https://github.com/ranKirito",
   "isDesktopOnly": false

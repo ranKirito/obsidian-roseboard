@@ -156,6 +156,12 @@ export function Kanban({
                       )}
                     </div>
                     <div className="rb-card-meta">
+                      {t.assignee && (
+                        <span className="rb-meta">
+                          <Icon name="user-round" />
+                          {t.assignee}
+                        </span>
+                      )}
                       {t.priority !== 'none' && (
                         <span className={`rb-chip rb-priority rb-priority-${t.priority}`}>
                           <Icon name={priorityIcon[t.priority]!} />

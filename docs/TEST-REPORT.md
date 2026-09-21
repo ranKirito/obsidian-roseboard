@@ -1,138 +1,102 @@
-# Roseboard 1.2.0 — implementation and test report
+# Roseboard 1.4.0 — implementation and test report
 
-Date: 2026-09-18. Final packaged build: **73/73 automated tests passing; 34/34 actual-Obsidian integration scenarios passing; zero captured renderer errors.** Strict TypeScript checking and the production bundle build pass. The 1.0.0 report is preserved in the repository history (`git show 072b1a7:docs/TEST-REPORT.md`).
+Date: 2026-09-20. Branch: `v1.4-canvas-workspace`, based on 1.3.0 (`28bdd6b`).
 
-## Implemented
+**Final packaged build: 91/91 automated checks and 54/54 actual Obsidian scenarios pass** (34 existing regression scenarios plus 20 document, planner and toolbar scenarios). Both integration reports contain zero captured renderer errors. Strict TypeScript checking, production bundling, license generation and packaging pass. The release ZIP, repository runtime files and isolated test installation match byte-for-byte; hashes are in `release-verification.json`.
 
-**1.2 (this branch):** freehand ink with Draw and Erase tools, seven colours and three widths, stroke simplification, viewport-attached rendering, wheel forwarding while drawing, Clear all ink, and full participation of strokes in undo, stamps, activity and the three-way merge. The `ink` record is optional and invisible to readers before 1.2.
+Public distribution check, 2026-09-21: a clean `npm ci`, all 91 automated checks and `npm run build` passed in the public repository. The rebuilt runtime files match the previously tested 1.4.0 release byte-for-byte. The 54 integration scenarios below describe the original release validation, not a second run.
 
-**1.1:** everything from 1.0.0 plus: record-level three-way merging of concurrent changes with overlap review, edit stamps and device attribution, an activity feed with remote-change highlighting, canonical serialization, debounced recovery drafts, undo rebasing, trackpad/mouse input detection with Shift+wheel panning, double-click creation, inline renaming, drag-to-empty-space task creation, context menus, arrow nudging, align/distribute, card colours, Kanban view, list sorting, viewport culling, node-object reuse, and the visual redesign with host Lucide icons. Bare-letter creation shortcuts were removed.
+## Implemented in 1.4
 
-## Actually tested
+- Compact header with a view picker, on-demand search, filters, properties, a New menu and grouped board actions. Canvas tools use a floating palette with accessible names, active states and hover/focus labels; camera options sit beside zoom. The desktop header is 52 CSS pixels tall and narrow panes use two rows.
+- Read expands a linked note or task's note on its existing canvas card. The document scrolls independently; reading preserves the camera, saved card dimensions, positions and board source. Collapse restores the original size.
+- Double-click document content or choose Edit to edit full Markdown inside the card, including properties. Save note or Cmd/Ctrl+Enter commits; Cancel asks before discarding changes. Editing is separate from board undo.
+- Shared note sessions and local recovery drafts preserve edits across cards, view changes and plugin reloads. Drafts follow note/folder renames. Exact-baseline Vault.process writes stop on concurrent note changes and retain the draft; Save a copy preserves it separately. Source editors, notes containing boards, missing notes and oversized documents are guarded.
+- Inline task/sticky/frame text cancellation no longer commits through a subsequent blur. New tasks created from Day/Calendar use the selected date and stay unplaced.
+- Schema 1 is unchanged. Note bodies and temporary reading dimensions are not written into board records. The existing planner, document library, assignment, drawing and board-merge features remain available.
 
-**Environment:** macOS Darwin 25.6.0, Apple M4 Pro (arm64); installed Obsidian application bundle 1.11.7 (its updater fetched 1.13.7 into the separate test profile; the test process was not restarted into it). Tests were driven through Playwright/CDP against this running Obsidian application with a separate profile. This was not a standalone browser mock or a mocked Obsidian runtime.
+## Test environment and safeguards
 
-A temporary vault was created by `scripts/launch-test-vault.mjs` in the system temporary directory (`Roseboard Test Vault` inside a fresh `roseboard-obsidian-*` folder).
+Integration tests run against the installed **Obsidian desktop application**, driven through Playwright/CDP, not a browser mock. Environment: macOS 25.6.0, Apple M4 Pro, arm64, 1440 × 1000. Toolbar checks also cover 900, 700, 430 and 390 CSS-pixel viewport widths. These are desktop viewport simulations. The harness did not report the host API version, so this does not certify the minimum supported Obsidian version.
 
-The harness verifies that the connected app's vault path matches this temporary vault before performing mutations. It contains copied examples and synthetic test records only. No test build was installed into the user's regular `.obsidian/plugins`, and no existing notes or LiveSync settings were modified. The test vault sets `nativeMenus: false` so context menus render in the DOM and can be observed; the plugin itself respects the user's setting. Build dependencies live outside any notes vault.
+The launcher creates a disposable vault and separate application profile. Both test drivers verify the connected vault's real path before changing anything. All creation, deletion, rename, conflict and recovery exercises use synthetic notes there. No test driver targets the regular vault, and LiveSync settings were not changed.
 
-### Automated domain, merge, file, and artifact checks (`npm test`)
+## Automated checks
 
-- Schema/defaults; unsupported versions; invalid shapes/references; IDs and unknown fields; valid calendar dates; vault-only paths; optional stamps validated as ISO date-times.
-- Fence parsing; exactly-one-block enforcement; longer/nested fences; CRLF; byte-preservation of surrounding Markdown; canonical sorted round trips.
-- Missing/self/cyclic prerequisites; blocked/ready/overdue/Today semantics across UTC boundaries and DST; date-only day arithmetic.
-- Independent duplication; placement removal versus task deletion; incoming prerequisite cleanup; explicit frame membership/movement/ungrouping; non-disruptive placement; undo/redo; stamping of only the changed records.
-- **Merge (`tests/merge.test.ts`):** disjoint edits combine without overlaps; same-card moves and same-field edits report overlaps, resolved by recency stamps or local preference and reversible either way; additions on both sides; removals versus edits; prerequisite repair after a remote deletion; tag/prerequisite set merging; checklist merging by item ID; duplicate placement repair keeping the synced card; refusal of cycle-producing combinations; extension-field and board-level merging; change diffing; history rebasing.
-- **Persistence against real temporary Markdown files:** debounced serialized saves; a burst of edits produces one recovery draft and none when the save lands first; stamps written through the storage port; external reloads keep coordinates and undo; concurrent external edits merge at file-event time and at commit time (inside the write transaction); overlaps listed and resolvable; unmergeable changes conflict and recover when the source is fixed; invalid JSON retention; source suspension; source edits combined after the editor closes; draft recovery combined with newer source; deletion recovery; edits during an in-flight save, including a merging save; subscriber cleanup.
-- **Ink (`tests/ink.test.ts`):** stroke schema defaults and rejections; Markdown round trips with sorted keys and omission of an empty map; survival through a reader that ignores `ink`; segment distance, bounds, RDP simplification keeping corners, smoothed SVG paths, hit testing; add/erase/clear as stamped undoable edits; merging strokes drawn on two devices with erasures honoured; diff of ink changes.
-- Built CSS selector/animation isolation; local runtime assets; manifest/version consistency; schema publication of the new optional fields; seventeen text/surface colour pairs at or above 4.5:1 contrast. This is token-level contrast verification, not a complete accessibility certification.
+Command: `npx vitest run --reporter=json --outputFile=docs/unit-test-results.json`.
 
-Raw machine-readable output: `unit-test-results.json` (regenerate with `npx vitest run --reporter=json --outputFile=docs/unit-test-results.json`).
+The 85 existing checks cover board schema and dependency invariants; stable IDs and absolute coordinates; Markdown fence/surrounding byte preservation; serialized saves, source guards and recovery; structural merging and undo; ink geometry; scoped CSS and contrast; manifest consistency; calendar/date arithmetic; planner grouping and filtering; assignments; and safe Markdown/link rendering.
 
-### Actual Obsidian integration scenarios (`npm run test:obsidian`)
+Six note-session checks were added to the existing persistence suite:
+
+- Explicit saving preserves full Markdown and properties.
+- Concurrent changes preserve the original and recover the draft; discarding clears only the draft.
+- A source editor opened while a save is starting still blocks the transaction.
+- Board-containing and oversized notes cannot enter the inline editor.
+- A missing target keeps the pending draft recoverable.
+- Serialized recovery writes cannot resurrect a draft after a successful save.
+
+Raw output: `unit-test-results.json`.
+
+## Actual Obsidian scenarios
+
+`npm run test:obsidian` passes 34 regression scenarios: plugin load; creation/edit/save/reopen; drag/resize/undo; source editing and reading previews; shared views; external changes and overlap review; invalid input and recovery; linked-note creation/rename/deletion; frames/relationships/dependencies; Kanban and filters; keyboard routing; wheel/pan/zoom; drawing/erasing; narrow layouts; stress fixture; and repeated view cleanup.
+
+`npm run test:planner` passes all 20 scenarios below, including seven new 1.4 scenarios.
 
 | Scenario | Result |
 | --- | --- |
-| Bundled plugin loads in installed Obsidian; full-pane example canvas; host icons render | PASS |
-| Create board command, task record, inspector edits, quick dates, checklist composer and stamps persist | PASS |
-| Completed pointer drag is one undo step; resize and 10,000+ coordinates persist | PASS |
-| Reopen restores same task IDs and coordinates from Markdown | PASS |
-| Inline rename, arrow nudging and card colours edit the record in place | PASS |
-| Double-click on empty canvas creates a task there; context menu completes it | PASS |
-| List editing, unplaced tray, placement removal, duplicate/delete and undo | PASS |
-| External JSON edit reloads valid data, preserves coordinates, keeps undo, highlights the change, shows attribution in Activity | PASS |
-| Invalid JSON retains last valid display, disables writes, never overwrites source | PASS |
-| Two open board views share one model and source-editor suspension prevents writes | PASS |
-| Local edits racing an external change to another record are merged, not conflicted | PASS |
-| Same-field overlap keeps local work, is listed for review, and can take the other side | PASS |
-| Uncombinable changes enter Conflict; recovery copy and preserve/reload work | PASS |
-| Reading-view preview is resizable and read-only; it does not suspend board writes | PASS |
-| Vault-note picker creates a reference; target rename follows; deletion is explicit | PASS |
-| Sticky safe preview does not mount raw HTML or fetch remote images | PASS |
-| Frames move their explicit members once and ungroup without deleting tasks | PASS |
-| Labelled connectors and dependency connectors have distinct storage; cycles are rejected | PASS |
-| Dragging a connection onto empty canvas creates a linked task | PASS |
-| Blocked completion warns, can be cancelled or accepted, and remains undoable | PASS |
-| Kanban drag changes status only and keeps canvas positions; column add; undo | PASS |
-| Search, status/priority/tag/due/blocked filters, presets and sorting preserve positions | PASS |
-| Multi-selection, keyboard duplicate/undo; shortcuts stay out of text inputs; stray typing never creates content | PASS |
-| Source-editor in-progress text is revalidated after closing; raw export command works | PASS |
-| Wheel input: trackpad deltas pan, mouse-wheel deltas zoom, Shift+wheel pans sideways; no camera writes | PASS |
-| Zoom, fit, minimap, snapping and marquee selection operate without camera saves | PASS |
-| Tags commit while typing, retain delimiters, and refresh after undo | PASS |
-| Unsupported schema and deleted source stay recoverable without replacement writes | PASS |
-| Narrow viewport uses a drawer and usable List view (desktop emulation only) | PASS |
-| Stress fixture: 300 nodes, 500 connections; load and interaction timings; culling mounts a subset | PASS |
-| Repeated open/close releases React roots, subscriptions and clean sessions | PASS |
-| Pen draws strokes (colour, width, simplified points, stamp), eraser removes only crossed strokes, undo restores, Clear all ink from the canvas menu, wheel still pans while drawing, cards never move | PASS |
-| Ink written by another device is merged with pending local edits, rendered, and listed in Activity | PASS |
-| Disabling the plugin leaves readable fenced JSON in the source note | PASS |
+| Read expands in place; scrolling stays inside the document and the board source is unchanged | PASS |
+| Double-click edits inside the card; Save preserves properties and changes only the linked note | PASS |
+| Unsaved note edits survive view changes and plugin reload | PASS |
+| A conflicting note update cannot be overwritten; the draft can be saved separately | PASS |
+| Cards of the same note share edits, and an active draft follows a file rename | PASS |
+| Document cards render live Markdown; library deduplicates task and card links | PASS |
+| Reader refreshes external note edits and resolves explicit Markdown links relative to the document | PASS |
+| Document rename, deletion and restoration update the reader without altering note bodies | PASS |
+| Library picker links a document below existing cards, avoids duplicates and supports search | PASS |
+| Day view captures unplaced tasks, tracks progress, and keeps overdue work separate | PASS |
+| Unscheduled planning and accessible rescheduling change only the due date and undo cleanly | PASS |
+| Assignments are editable, searchable and filter the calendar and daily view | PASS |
+| Calendar navigation and drag rescheduling preserve canvas positions and persist on disk | PASS |
+| Blocked completion still requires the existing confirmation | PASS |
+| Source editing makes planner controls read-only; they resume after the editor closes | PASS |
+| Document and planning shortcuts never edit hidden selected canvas cards | PASS |
+| Narrow desktop viewport keeps Day, Calendar and Documents usable without horizontal overflow | PASS |
+| New in a planner uses the selected day and stays unplaced | PASS |
+| Compact header and tool palette stay within desktop and narrow panes | PASS |
+| Reopening preserves assignments and dates, and creates no copied document body | PASS |
 
-Raw results: `obsidian-test-results.json`. Pointer, wheel and keyboard events were injected by the automation driver. The "other device" in the merge scenarios is simulated by writing the note through `Vault.modify`, which is the same public API the installed LiveSync client uses to reflect incoming files; a live two-device LiveSync round trip was not performed (see below). Wheel-device detection was exercised with synthetic `deltaMode`/fractional deltas, not a physical trackpad.
+Raw outputs: `obsidian-test-results.json` and `planner-test-results.json`. Document checks captured zero requests to the remote image fixture and verified that raw script content did not execute. The in-card editor check uses the real host keyboard route for Cmd/Ctrl+Enter. Wheel events, including Shift+wheel, leave the canvas camera unchanged when scrolling a reader.
 
-The 1.2 ink scenario draws with injected mouse events on the drawing overlay; pen pressure, palm rejection and finger drawing on a touch screen were not exercised. These checks (1.1 and 1.2 runs) caught and led to fixes for: a card-level `position: relative` that clipped resize and connection handles; double-clicks on card titles also creating tasks; a wheel-detection hysteresis that could never flip to mouse; a low-zoom mode that hid the missing-note indicator; and bare-letter creation shortcuts that turned stray typing into tasks. The final suite passes after those corrections.
+The checks exposed and led to fixes for nested reader scroll containers, the host intercepting the save shortcut, and creation from planner views. Existing regression drivers were updated for native view/action menus and the on-demand search control. External changes are simulated through Obsidian's Vault API; they do not establish delivery between physical devices.
 
-### Measured stress fixture
+## Stress fixture measurements
 
-`examples/stress-300.md` is reproducible: **300 task nodes, 250 acyclic dependency arrows, and 250 ordinary connectors**. Measurements were collected in the running Obsidian application at 1440 × 1000 pixels on the Mac above, with ordinary background applications running and viewport culling off unless stated.
+300 task cards, 250 dependency arrows and 250 ordinary connectors in the actual desktop host. Measurements include automation/observation overhead and are not device FPS guarantees.
 
-| Measurement in final integration run | Observed |
+| Measurement | Final run |
 | --- | --- |
-| Open board until 300 nodes / 500 edges exist and two animation frames elapse | 279 ms |
-| Change one task title until the new text is observed in the DOM | 73 ms |
-| Wheel-pan event to next animation frame, 15 samples | 10–25 ms; median 17 ms |
-| Cards mounted at 100 % zoom with automatic culling (board > 120 cards) | 20 of 300 |
+| Open until all nodes/edges and two animation frames | 319 ms |
+| One title edit to visible DOM update | 74 ms |
+| Wheel-pan event to next frame | 8–18 ms, median 16 ms |
+| Mounted cards at 100% with automatic culling | 20 of 300 |
 
-These are one-run desktop automation measurements, including CDP, event dispatch, observation, and polling overhead. They are **not a measured FPS guarantee**, an Android benchmark, or a universal performance claim. The 1.0.0 run measured 211 ms / 145 ms / median 10 ms on the same machine under different background load; the single-edit path is faster because unchanged node objects are now reused.
+## Screenshots
 
-### Real screenshots
+All screenshots use synthetic notes in the isolated Obsidian application.
 
-- `roseboard-desktop.png`: actual full-pane plugin in Obsidian after this run.
-- `roseboard-narrow.png`: actual plugin at a 430 × 900 desktop viewport, showing the responsive drawer. **Not an Android screenshot.**
-- `roseboard-stress.png`: actual 300-task stress fixture.
-- `roseboard-ink.png`: two rose strokes drawn with the pen tool during the run.
+- `roseboard-canvas-reader.png`: compact workspace and expanded on-canvas document.
+- `roseboard-canvas-editor.png`: full Markdown editor inside that card.
+- `roseboard-toolbar-narrow.png`: compact header and tool palette at a narrow width.
+- `roseboard-documents.png`, `roseboard-day.png`, `roseboard-calendar.png`, `roseboard-planner-narrow.png`: existing document/planner views on 1.4.
+- `roseboard-desktop.png`, `roseboard-ink.png`, `roseboard-stress.png`, `roseboard-narrow.png`: regression fixtures on the final bundle.
 
-## Implemented but not verified on the target environment
+## Boundaries and unverified environments
 
-- **Physical Mac trackpad and mouse:** wheel classification, pinch, Shift+wheel and Space+drag are implemented and exercised with injected events; physical two-finger/pinch gestures and a real wheel mouse were not available to the automation.
-- **Two-device LiveSync:** the merge path was exercised by writing the note through the public Vault API in the temporary vault. No LiveSync was installed there, and no round trip through the user's CouchDB server with a second device was performed. A second device's configuration remains unverified.
-- **Android:** browser-only runtime, touch-friendly modes, Kanban Move menu, List and drawer are implemented. Android WebView, soft keyboard, real touch/pinch, backgrounding and device performance were not tested.
-- **Native context menus:** the plugin uses Obsidian's `Menu`, which renders natively on macOS by default. Tests observed the DOM variant; the native variant was opened manually only.
-- **Crash/power-loss durability:** draft recovery was exercised through the automated persistence adapter. Drafts are now debounced, so up to 0.8 s of the newest edits may be absent from a draft after a hard crash.
-- Minimum declared Obsidian version 1.6.0, Windows, Linux, and iOS were not independently tested.
-
-## Manual smoke-test checklists
-
-### Mac trackpad and mouse
-
-- [ ] With the pointer setting on Auto, scroll with two fingers: the canvas pans, the zoom label is unchanged. Pinch: it zooms around the fingers.
-- [ ] Plug in a wheel mouse and roll two notches: the pointer button in the bottom-left cluster switches to the mouse icon and the wheel zooms. Shift+wheel pans sideways; middle-drag pans.
-- [ ] In Select mode hold Space and drag empty canvas: it pans, no marquee. Release Space: marquee returns.
-- [ ] Double-click empty canvas, double-click a title, right-click a card and the canvas, drag a connection to empty space. Undo each once.
-
-### Two devices over LiveSync
-
-- [ ] Set a distinct **Device name** on each device. Open the same board on both.
-- [ ] Move one card on device A and a different card on device B within a few seconds. Both boards should show both moves, the moved cards glow on the receiving device, and the Activity panel names the other device. No Conflict banner.
-- [ ] Rename the same task on both devices. The later rename should win on both; the overlap bar should offer the other value.
-- [ ] Add a task on A while B has the source note open in Source mode; close the editor on B. B should merge, not conflict.
-- [ ] Deliberately create a cycle from both sides; confirm the Conflict banner, Save local copy, and Preserve draft & reload.
-- [ ] Check LiveSync's own log for text-merge conflicts on the note; with sorted records they should be rare. If LiveSync writes invalid JSON, Roseboard must show the error and keep the last valid board.
-
-### Ink on touch and pen devices
-
-- [ ] Draw with a finger on Android and with a stylus if available; confirm strokes commit on lift and the note gains an `ink` record.
-- [ ] While Draw is active, confirm two-finger panning is unavailable (switch to Hand) and that Esc/Done returns to Select.
-- [ ] Erase by dragging across a stroke; undo; Clear all ink from the canvas menu.
-
-### Android
-
-- [ ] Install the three release files into a new local vault and enable Roseboard.
-- [ ] Switch Canvas/Kanban/List, use Hand/Select, pan/pinch, and operate explicit zoom controls.
-- [ ] Create/edit a task; use the soft keyboard, checklist composer, quick due dates, tags, note picker and drawer close button.
-- [ ] Move a task between Kanban columns with the Move menu; verify the canvas position is unchanged.
-- [ ] Background/resume, close/reopen, and verify saved local data and pending draft recovery.
-
-## Deferred
-
-Collapsible frames, templates, selected-checkbox import, Markdown checklist export, and native `.canvas` export remain unimplemented. Ink is stroke-only: no shapes, text tool, stroke selection or moving, pressure-sensitive width, or image export. Calendars, Gantt, recurring scheduling, AI chat, Tasks/Dataview bidirectional integration, and multiplayer with presence remain outside scope.
+- Physical two-device LiveSync was not tested. Local external-file and merge checks do not verify replication or server state.
+- Android/iOS and physical touch, pen or trackpad were not tested. Narrow desktop emulation and injected pointer events do not establish those experiences.
+- Other operating systems and minimum Obsidian 1.6.0 were not separately tested.
+- Hard crash/power loss was not tested. The newest unsaved burst may be absent from a debounced recovery draft; note drafts are local plugin files and may not be included in sync.
+- Reading/editing supports Markdown. The editor is a plain Markdown textarea with explicit save, not Obsidian Live Preview. PDF/Office/image previews, remote images and embedded plugin output remain outside scope; use Open in Obsidian for the full host experience.
+- Planning uses task due dates on one board. Recurring tasks, calendar services and reminders are not implemented. Assignees are labels, not accounts, permissions, presence or notifications.

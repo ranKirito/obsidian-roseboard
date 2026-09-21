@@ -20,6 +20,7 @@ import {
 import { createRoot, type Root } from 'react-dom/client';
 import { BoardApp } from './ui/Board';
 import { BoardSession, type RecoveryDraft, type Storage } from './persistence/session';
+import { NoteSession, type NoteDraft, type NoteStorage } from './persistence/note-session';
 import { boardNote, findBlock, parseNote } from './persistence/markdown';
 import { newBoard, serialize, validateBoard, vaultPath } from './domain/model';
 import type { BoardHost, MenuItemSpec, Preferences } from './ui/ports';
@@ -44,6 +45,7 @@ export default class RoseboardPlugin extends Plugin {
   settings: Settings = defaults;
   private sessions = new Map<string, Promise<BoardSession>>();
   private references = new Map<BoardSession, number>();
+  private noteSessions = new Map<string, Promise<NoteSession>>();
   private notesListeners = new Set<() => void>();
   private recoveryQueue: Promise<void> = Promise.resolve();
   private stopped = false;
@@ -132,6 +134,7 @@ export default class RoseboardPlugin extends Plugin {
   }
   private flushAll() {
     for (const promise of this.sessions.values()) void promise.then((s) => s.flush()).catch(this.notice);
+    for (const promise of this.noteSessions.values()) void promise.then((s) => s.stash()).catch(this.notice);
   }
   sourceOpen = (path: string) =>
     this.app.workspace
@@ -215,6 +218,50 @@ export default class RoseboardPlugin extends Plugin {
       return path;
     },
   };
+  private noteStorage: NoteStorage = {
+    read: (path) => this.app.vault.read(this.file(path)),
+    process: (path, transform) => this.app.vault.process(this.file(path), transform),
+    sourceOpen: this.sourceOpen,
+    loadDraft: async (path) => {
+      await this.recoveryQueue;
+      const location = `${this.recoveryFolder}/note-${await this.recoveryKey(path)}.json`;
+      if (!(await this.app.vault.adapter.exists(location))) return undefined;
+      const draft = JSON.parse(await this.app.vault.adapter.read(location)) as NoteDraft;
+      if (draft.path !== path || typeof draft.baseline !== 'string' || typeof draft.text !== 'string')
+        throw new Error('The note recovery draft could not be read. The original note was left untouched.');
+      return draft;
+    },
+    draft: (path, draft) =>
+      this.recoveryWrite(async () => {
+        const location = `${this.recoveryFolder}/note-${await this.recoveryKey(path)}.json`;
+        if (draft) {
+          await this.ensureFolder(this.recoveryFolder);
+          await this.app.vault.adapter.write(location, JSON.stringify(draft));
+        } else if (await this.app.vault.adapter.exists(location))
+          await this.app.vault.adapter.remove(location);
+      }),
+    copy: async (original, text) => {
+      const path = await this.uniquePath(`${original.replace(/\.md$/i, '')} - recovered`, 'md');
+      await this.app.vault.create(path, text);
+      return path;
+    },
+  };
+  private async editNote(path: string, sourcePath: string) {
+    const target = this.resolveNote(path, sourcePath);
+    if (!target || target.extension !== 'md') throw new Error('Choose an existing Markdown note to edit.');
+    const key = target.path;
+    const existing = this.noteSessions.get(key);
+    const pending = existing
+      ? existing.then((session) =>
+          session.getSnapshot().status === 'Closed' ? NoteSession.open(key, this.noteStorage) : session,
+        )
+      : NoteSession.open(key, this.noteStorage);
+    this.noteSessions.set(key, pending);
+    void pending.catch(() => {
+      if (this.noteSessions.get(key) === pending) this.noteSessions.delete(key);
+    });
+    return pending;
+  }
   async acquire(path: string): Promise<BoardSession> {
     let promise = this.sessions.get(path);
     if (!promise) {
@@ -271,15 +318,55 @@ export default class RoseboardPlugin extends Plugin {
       session,
       openSource: () => this.openSource(session),
       exportJSON: () => this.exportJSON(session.path, session),
-      openNote: (path) => {
-        const target = this.resolveNote(path, session.path);
+      openNote: (path, sourcePath = session.path) => {
+        const target = this.resolveNote(path, sourcePath);
         if (!target) {
           new Notice(`Linked note is missing: ${path}`);
           return;
         }
-        void this.app.workspace.openLinkText(target.path, session.path, true);
+        const hash = path.indexOf('#');
+        void this.app.workspace.openLinkText(
+          target.path + (hash < 0 ? '' : path.slice(hash)),
+          sourcePath,
+          true,
+        );
       },
       noteExists: (path) => !!this.resolveNote(path, session.path),
+      readNote: async (path) => {
+        const target = this.resolveNote(path, session.path);
+        if (!target) return undefined;
+        if (target.extension !== 'md')
+          throw new Error('Preview is available for Markdown notes. Open this file in Obsidian to view it.');
+        const text = await this.app.vault.cachedRead(target);
+        return { path: target.path, text: text.slice(0, 100000), truncated: text.length > 100000 };
+      },
+      editNote: (path) => this.editNote(path, session.path),
+      subscribeNote: (path, callback) => {
+        const vault = this.app.vault;
+        let target = this.resolveNote(path, session.path);
+        const refs = [
+          vault.on('modify', (file) => {
+            if (file === target) callback();
+          }),
+          vault.on('rename', () => {
+            target = this.resolveNote(path, session.path);
+            callback();
+          }),
+          vault.on('delete', (file) => {
+            if (file === target) {
+              target = null;
+              callback();
+            }
+          }),
+          vault.on('create', () => {
+            if (!target) {
+              target = this.resolveNote(path, session.path);
+              callback();
+            }
+          }),
+        ];
+        return () => refs.forEach((ref) => vault.offref(ref));
+      },
       pickNote: () =>
         new FilePicker(this.app, this.app.vault.getMarkdownFiles(), 'Choose a vault note').choose(),
       confirm: (title, description) => new ConfirmDialog(this.app, title, description).choose(),
@@ -308,9 +395,24 @@ export default class RoseboardPlugin extends Plugin {
   private resolveNote(path: string, source: string): TFile | null {
     const base = path.split('#')[0]!;
     if (!vaultPath.safeParse(base).success) return null;
-    return this.app.metadataCache.getFirstLinkpathDest(base, source);
+    const exact = this.app.vault.getAbstractFileByPath(base);
+    const target =
+      this.app.metadataCache.getFirstLinkpathDest(base, source) ?? (exact instanceof TFile ? exact : null);
+    return target && vaultPath.safeParse(target.path).success ? target : null;
   }
   private async handleRename(path: string, oldPath: string) {
+    for (const [key, promise] of [...this.noteSessions]) {
+      if (key === oldPath || key.startsWith(oldPath + '/')) {
+        const updated = path + key.slice(oldPath.length);
+        this.noteSessions.delete(key);
+        const moved = promise.then(async (session) => {
+          await session.rename(updated);
+          return session;
+        });
+        this.noteSessions.set(updated, moved);
+        void moved.catch(this.notice);
+      }
+    }
     for (const [key, promise] of [...this.sessions]) {
       const session = await promise;
       if (key === oldPath || key.startsWith(oldPath + '/')) {
@@ -427,6 +529,7 @@ export default class RoseboardPlugin extends Plugin {
   }
   onunload() {
     this.stopped = true;
+    this.flushAll();
     // Leaves are left in place so an update reopens them where the user had them.
     for (const promise of this.sessions.values()) void promise.then((s) => s.close()).catch(this.notice);
     this.notesListeners.clear();
@@ -463,6 +566,15 @@ class RoseboardView extends ItemView {
     shortcut(['Mod'], 'a', 'selectAll');
     shortcut([], 'Delete', 'remove');
     shortcut([], 'Backspace', 'remove');
+    // Obsidian's parent scope consumes Mod+Enter before a textarea's DOM handler sees it.
+    this.scope.register(['Mod'], 'Enter', (event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target || !this.contentEl.contains(target) || !target.matches('.rb-note-editor textarea')) return;
+      target.dispatchEvent(new CustomEvent('roseboard-note-save'));
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    });
   }
   /** Sends a named action to the mounted board; returns false when no board is mounted. */
   dispatch(action: string): boolean {
@@ -707,7 +819,9 @@ class RoseboardSettings extends PluginSettingTab {
       );
     new Setting(this.containerEl)
       .setName('Render only visible cards')
-      .setDesc('Skips cards outside the viewport. Helps large boards; automatic switches it on above 120 cards.')
+      .setDesc(
+        'Skips cards outside the viewport. Helps large boards; automatic switches it on above 120 cards.',
+      )
       .addDropdown((dropdown) =>
         dropdown
           .addOptions({ auto: 'Automatic', on: 'Always', off: 'Never' })

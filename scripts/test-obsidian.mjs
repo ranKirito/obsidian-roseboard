@@ -32,6 +32,21 @@ const report = {
   errors,
 };
 const root = () => page.locator('.roseboard-root:visible').last();
+const menuAction = async (label, item) => {
+  await root().getByRole('button', { name: label, exact: true }).click();
+  await page
+    .locator('.menu .menu-item-title')
+    .filter({ hasText: new RegExp('^' + item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') })
+    .click();
+};
+const mode = (name) => menuAction('Board view', name);
+const action = (name) => menuAction('Board actions', name);
+const search = async (value) => {
+  if (!(await root().getByRole('textbox', { name: 'Search tasks', exact: true }).count()))
+    await root().getByLabel('Toggle task search').click();
+  await root().getByRole('textbox', { name: 'Search tasks', exact: true }).fill(value);
+};
+
 const active = () =>
   page.evaluate(
     () =>
@@ -72,7 +87,10 @@ const eventually = async (fn) => {
   throw last;
 };
 const zoomLabel = () => root().getByLabel('Reset zoom', { exact: true }).innerText();
-const wheel = (init) => root().locator('.react-flow__pane').dispatchEvent('wheel', { bubbles: true, cancelable: true, ...init });
+const wheel = (init) =>
+  root()
+    .locator('.react-flow__pane')
+    .dispatchEvent('wheel', { bubbles: true, cancelable: true, ...init });
 async function test(name, fn) {
   const start = performance.now();
   try {
@@ -92,7 +110,14 @@ try {
     await page.locator('.modal-close-button').last().click();
   await page.evaluate(async () => {
     const plugin = app.plugins.plugins.roseboard;
-    Object.assign(plugin.settings, { snap: false, minimap: false, input: 'auto', culling: 'off', deviceName: 'Test Mac', stamps: true });
+    Object.assign(plugin.settings, {
+      snap: false,
+      minimap: false,
+      input: 'auto',
+      culling: 'off',
+      deviceName: 'Test Mac',
+      stamps: true,
+    });
     await plugin.saveData(plugin.settings);
     app.vault.setConfig('nativeMenus', false); // Temporary test vault only: DOM menus are observable.
   });
@@ -116,7 +141,7 @@ try {
     );
     path = await active();
     assert.ok(path);
-    await root().locator('.rb-createbar .rb-primary').click();
+    await root().getByLabel('New task', { exact: true }).click();
     await root().getByRole('textbox', { name: 'Task title', exact: true }).fill('A tested task');
     await root().getByLabel('Task status', { exact: true }).selectOption('doing');
     await root().getByLabel('Task priority', { exact: true }).selectOption('high');
@@ -151,9 +176,9 @@ try {
     await flush(path);
     let after = await board(path);
     assert.notEqual(after.nodes[nodeId].x, before.nodes[nodeId].x);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     assert.equal((await board(path)).nodes[nodeId].x, before.nodes[nodeId].x);
-    await root().getByRole('button', { name: 'Redo', exact: true }).click();
+    await action('Redo');
     await root()
       .locator(`[data-id="${nodeId}"]`)
       .click({ position: { x: 80, y: 70 } });
@@ -190,7 +215,9 @@ try {
     await field.fill('Renamed inline');
     await field.press('Enter');
     await eventually(async () => assert.equal((await board(path)).tasks[taskId].title, 'Renamed inline'));
-    await root().locator(`[data-id="${nodeId}"]`).click({ position: { x: 80, y: 70 } });
+    await root()
+      .locator(`[data-id="${nodeId}"]`)
+      .click({ position: { x: 80, y: 70 } });
     const before = (await board(path)).nodes[nodeId];
     await root().focus();
     await page.keyboard.press('ArrowRight');
@@ -200,7 +227,10 @@ try {
       assert.equal(n.x, before.x + 8);
       assert.equal(n.y, before.y + 32);
     });
-    await root().locator('.rb-selectionbar').getByRole('button', { name: 'mint colour', exact: true }).click();
+    await root()
+      .locator('.rb-selectionbar')
+      .getByRole('button', { name: 'mint colour', exact: true })
+      .click();
     await eventually(async () => assert.equal((await board(path)).nodes[nodeId].color, 'mint'));
     assert.equal(await root().locator(`[data-id="${nodeId}"] .rb-card.rb-tint-mint`).count(), 1);
     await flush(path);
@@ -209,24 +239,33 @@ try {
     const countBefore = Object.keys((await board(path)).tasks).length;
     const pane = await root().locator('.react-flow__pane').boundingBox();
     await page.mouse.dblclick(pane.x + pane.width * 0.7, pane.y + pane.height * 0.75);
-    await eventually(async () => assert.equal(Object.keys((await board(path)).tasks).length, countBefore + 1));
+    await eventually(async () =>
+      assert.equal(Object.keys((await board(path)).tasks).length, countBefore + 1),
+    );
     const created = Object.entries((await board(path)).nodes).find(([id]) => id !== nodeId);
     assert.ok(created, 'a placement exists for the new task');
     await root().getByRole('button', { name: 'Close inspector' }).click();
-    await root().locator(`[data-id="${created[0]}"]`).click({ button: 'right', position: { x: 120, y: 60 } });
+    await root()
+      .locator(`[data-id="${created[0]}"]`)
+      .click({ button: 'right', position: { x: 120, y: 60 } });
     const item = page.locator('.menu .menu-item', { hasText: 'Complete task' });
     await item.waitFor();
     await item.click();
     await eventually(async () => assert.equal((await board(path)).tasks[created[1].taskId].status, 'done'));
     await page.keyboard.press('Escape');
-    await root().locator(`[data-id="${created[0]}"]`).click({ position: { x: 120, y: 60 } });
-    await root().locator('.rb-selectionbar').getByRole('button', { name: /^Remove card/ }).click();
-    await root().getByRole('button', { name: 'List', exact: true }).click();
+    await root()
+      .locator(`[data-id="${created[0]}"]`)
+      .click({ position: { x: 120, y: 60 } });
+    await root()
+      .locator('.rb-selectionbar')
+      .getByRole('button', { name: /^Remove card/ })
+      .click();
+    await mode('List');
     await root().locator('.rb-list-row', { hasText: 'Untitled task' }).locator('.rb-list-title').click();
     await root().getByRole('button', { name: 'Delete task…', exact: true }).click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     await eventually(async () => assert.equal(Object.keys((await board(path)).tasks).length, countBefore));
-    await root().getByRole('button', { name: 'Canvas', exact: true }).click();
+    await mode('Canvas');
     await flush(path);
   });
   await test('List editing, unplaced tray, placement removal, duplicate/delete and undo', async () => {
@@ -241,7 +280,7 @@ try {
       .click();
     assert.equal(Object.keys((await board(path)).tasks).length, 2);
     assert.equal(Object.keys((await board(path)).nodes).length, 1);
-    await root().getByRole('button', { name: 'List', exact: true }).click();
+    await mode('List');
     assert.equal(await root().locator('.rb-list-row').count(), 2);
     await root().getByRole('button', { name: 'Place', exact: true }).click();
     assert.equal(Object.keys((await board(path)).nodes).length, 2);
@@ -249,15 +288,20 @@ try {
     await root().getByRole('button', { name: 'Delete task…', exact: true }).click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     assert.equal(Object.keys((await board(path)).tasks).length, 1);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     assert.equal(Object.keys((await board(path)).tasks).length, 2);
     await flush(path);
   });
   await test('External JSON edit reloads valid data, preserves coordinates, keeps undo, and highlights the change', async () => {
     const old = parse(await sourceText(path));
     const updated = structuredClone(old);
-    updated.tasks.agent = { title: 'Added by external JSON', status: 'todo', tags: ['external'], updatedBy: 'Friend Phone' };
-    await root().getByRole('button', { name: 'Canvas', exact: true }).click();
+    updated.tasks.agent = {
+      title: 'Added by external JSON',
+      status: 'todo',
+      tags: ['external'],
+      updatedBy: 'Friend Phone',
+    };
+    await mode('Canvas');
     await writeSource(path, updated);
     await eventually(async () => assert.ok((await board(path)).tasks.agent));
     assert.deepEqual((await board(path)).nodes, old.nodes);
@@ -265,7 +309,7 @@ try {
     assert.equal(state.canUndo, true, 'local undo history survives a remote reload');
     assert.equal(state.activity[0].by, 'Friend Phone');
     assert.equal(state.activity[0].changes[0].id, 'agent');
-    await root().getByRole('button', { name: 'Activity', exact: true }).click();
+    await action('Activity');
     assert.ok((await root().locator('.rb-activity').innerText()).includes('Friend Phone'));
     await root().getByRole('button', { name: 'Close activity', exact: true }).click();
   });
@@ -276,11 +320,14 @@ try {
       [path, text.replace(/(```roseboard\n)[\s\S]*?(\n```)/, '$1{"unfinished":$2')],
     );
     await eventually(async () => assert.ok((await root().innerText()).includes('Invalid JSON')));
-    assert.equal(await root().locator('.rb-createbar .rb-primary').isDisabled(), true);
+    assert.equal(await root().getByLabel('New task', { exact: true }).isDisabled(), true);
     await page.waitForTimeout(600);
     assert.ok((await sourceText(path)).includes('{"unfinished":'));
     assert.ok((await board(path)).tasks.agent);
-    await page.evaluate(async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text), [path, text]);
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [path, text],
+    );
     await eventually(async () => assert.equal((await flush(path)).status, 'Saved locally'));
   });
   await test('Two open board views share one model and source-editor suspension prevents writes', async () => {
@@ -393,7 +440,7 @@ try {
       'vertical',
     );
     assert.equal(await page.evaluate((path) => app.plugins.plugins.roseboard.sourceOpen(path), path), false);
-    assert.equal(await page.locator('.rb-preview:visible .rb-createbar').count(), 0);
+    assert.equal(await page.locator('.rb-preview:visible .rb-tool-dock').count(), 0);
     await page.evaluate(() => app.workspace.getLeavesOfType('markdown').forEach((l) => l.detach()));
     await open(path);
   });
@@ -435,7 +482,7 @@ try {
     });
   });
   await test('Sticky safe preview does not mount raw HTML or fetch remote images', async () => {
-    await root().getByRole('button', { name: 'Note', exact: true }).click();
+    await root().getByRole('button', { name: 'New note', exact: true }).click();
     const requests = [];
     const observe = (request) => {
       if (request.url().includes('roseboard-security.invalid')) requests.push(request.url());
@@ -480,7 +527,7 @@ try {
       assert.ok(Math.abs(after.nodes[id].y - before.nodes[id].y - dy) < 0.01);
     }
     assert.deepEqual(after.nodes['node-prototype'], before.nodes['node-prototype']);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     assert.deepEqual((await board('Feature checks.md')).nodes, before.nodes);
     await label.click();
     await root().getByRole('button', { name: 'Remove card', exact: true }).click();
@@ -488,7 +535,7 @@ try {
     assert.equal(b.nodes['frame-discover'], undefined);
     assert.equal(b.nodes['node-brief'].frameId, undefined);
     assert.equal(Object.keys(b.tasks).length, 6);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
   });
   await test('Labelled connectors and dependency connectors have distinct storage; cycles are rejected', async () => {
     await root().locator('[data-id="node-brief"] .rb-card-title strong').click();
@@ -518,7 +565,9 @@ try {
     await root().getByRole('button', { name: 'Connect', exact: true }).click();
     await root().getByRole('button', { name: 'Fit all', exact: true }).click();
     const before = await board('Feature checks.md');
-    await root().locator('[data-id="node-ship"]').hover({ position: { x: 100, y: 60 } });
+    await root()
+      .locator('[data-id="node-ship"]')
+      .hover({ position: { x: 100, y: 60 } });
     const handle = await root().locator('[data-id="node-ship"] .react-flow__handle-bottom').boundingBox();
     const pane = await root().locator('.react-flow__pane').boundingBox();
     const dropY = Math.min(handle.y + 150, pane.y + pane.height - 80);
@@ -531,8 +580,13 @@ try {
       assert.equal(Object.keys(after.tasks).length, Object.keys(before.tasks).length + 1);
       assert.equal(Object.keys(after.edges).length, Object.keys(before.edges).length + 1);
     });
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
-    await eventually(async () => assert.deepEqual(Object.keys((await board('Feature checks.md')).tasks).sort(), Object.keys(before.tasks).sort()));
+    await action('Undo');
+    await eventually(async () =>
+      assert.deepEqual(
+        Object.keys((await board('Feature checks.md')).tasks).sort(),
+        Object.keys(before.tasks).sort(),
+      ),
+    );
     await flush('Feature checks.md');
   });
   await test('Blocked completion warns, can be cancelled or accepted, and remains undoable', async () => {
@@ -546,32 +600,41 @@ try {
       .click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
     assert.equal((await board('Feature checks.md')).tasks.build.status, 'done');
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     assert.equal((await board('Feature checks.md')).tasks.build.status, 'todo');
   });
   await test('Kanban drag changes status only and keeps canvas positions', async () => {
     const before = await board('Feature checks.md');
-    await root().getByRole('button', { name: 'Kanban', exact: true }).click();
+    await mode('Kanban');
     const card = root().locator('.rb-column-todo .rb-kanban-card', { hasText: 'Review with fresh eyes' });
     await card.waitFor();
     await card.dragTo(root().locator('.rb-column-doing .rb-column-body'));
-    await eventually(async () => assert.equal((await board('Feature checks.md')).tasks.review.status, 'doing'));
+    await eventually(async () =>
+      assert.equal((await board('Feature checks.md')).tasks.review.status, 'doing'),
+    );
     assert.deepEqual((await board('Feature checks.md')).nodes, before.nodes);
-    assert.equal(await root().locator('.rb-column-doing .rb-kanban-card', { hasText: 'Review with fresh eyes' }).count(), 1);
+    assert.equal(
+      await root().locator('.rb-column-doing .rb-kanban-card', { hasText: 'Review with fresh eyes' }).count(),
+      1,
+    );
     await root().getByRole('button', { name: 'Add task to Backlog', exact: true }).click();
-    await eventually(async () => assert.equal(await root().locator('.rb-column-backlog .rb-kanban-card').count(), 3));
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
-    await eventually(async () => assert.equal((await board('Feature checks.md')).tasks.review.status, 'todo'));
-    await root().getByRole('button', { name: 'Canvas', exact: true }).click();
+    await eventually(async () =>
+      assert.equal(await root().locator('.rb-column-backlog .rb-kanban-card').count(), 3),
+    );
+    await action('Undo');
+    await action('Undo');
+    await eventually(async () =>
+      assert.equal((await board('Feature checks.md')).tasks.review.status, 'todo'),
+    );
+    await mode('Canvas');
     await flush('Feature checks.md');
   });
   await test('Search, status/priority/tag/due/blocked filters and presets preserve positions', async () => {
     const before = (await board('Feature checks.md')).nodes;
-    await root().getByRole('button', { name: 'List', exact: true }).click();
-    await root().getByLabel('Search tasks', { exact: true }).fill('prototype');
+    await mode('List');
+    await search('prototype');
     assert.equal(await root().locator('.rb-list-row').count(), 1);
-    await root().getByLabel('Search tasks', { exact: true }).fill('');
+    await search('');
     await root().getByRole('button', { name: 'Toggle filters', exact: true }).click();
     await root().getByLabel('Filter status', { exact: true }).selectOption('doing');
     assert.equal(await root().locator('.rb-list-row').count(), 1);
@@ -582,7 +645,10 @@ try {
     const all = await board('Feature checks.md');
     const isBlocked = (t) => t.dependsOn.some((id) => all.tasks[id]?.status !== 'done');
     await root().getByLabel('Filter blocked state', { exact: true }).selectOption('blocked');
-    assert.equal(await root().locator('.rb-list-row').count(), Object.values(all.tasks).filter(isBlocked).length);
+    assert.equal(
+      await root().locator('.rb-list-row').count(),
+      Object.values(all.tasks).filter(isBlocked).length,
+    );
     await root().getByRole('button', { name: 'Clear', exact: true }).click();
     await root().locator('.rb-filterbar').getByRole('button', { name: 'Ready', exact: true }).click();
     assert.equal(
@@ -591,9 +657,14 @@ try {
     );
     // The example carries a fixed due date, so the expected counts depend on the real calendar day.
     const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Ljubljana' }).format(new Date());
-    const tasks = Object.values(await board('Feature checks.md')).length ? Object.values((await board('Feature checks.md')).tasks) : [];
+    const tasks = Object.values(await board('Feature checks.md')).length
+      ? Object.values((await board('Feature checks.md')).tasks)
+      : [];
     await root().locator('.rb-filterbar').getByRole('button', { name: 'Today', exact: true }).click();
-    assert.equal(await root().locator('.rb-list-row').count(), tasks.filter((t) => t.dueDate === today).length);
+    assert.equal(
+      await root().locator('.rb-list-row').count(),
+      tasks.filter((t) => t.dueDate === today).length,
+    );
     await root().locator('.rb-filterbar').getByRole('button', { name: 'Overdue', exact: true }).click();
     assert.equal(
       await root().locator('.rb-list-row').count(),
@@ -601,17 +672,20 @@ try {
     );
     await root().getByRole('button', { name: 'Clear', exact: true }).click();
     await root().getByLabel('Filter due state', { exact: true }).selectOption('none');
-    assert.equal(await root().locator('.rb-list-row').count(), Object.values(all.tasks).filter((t) => !t.dueDate).length);
+    assert.equal(
+      await root().locator('.rb-list-row').count(),
+      Object.values(all.tasks).filter((t) => !t.dueDate).length,
+    );
     await root().getByRole('button', { name: 'Clear', exact: true }).click();
     await root().getByLabel('Sort tasks', { exact: true }).selectOption('priority');
     assert.ok((await root().locator('.rb-list-row').first().innerText()).toLowerCase().includes('high'));
     await root().getByLabel('Sort tasks', { exact: true }).selectOption('created');
     assert.deepEqual((await board('Feature checks.md')).nodes, before);
     await root().getByRole('button', { name: 'Toggle filters', exact: true }).click();
-    await root().getByRole('button', { name: 'Canvas', exact: true }).click();
+    await mode('Canvas');
   });
   await test('Multi-selection, keyboard duplicate/undo, and shortcuts do not hijack text inputs', async () => {
-    await root().getByRole('button', { name: 'Canvas', exact: true }).click();
+    await mode('Canvas');
     await root().locator('[data-id="node-brief"] .rb-card-title strong').click();
     await root()
       .locator('[data-id="node-sketch"] .rb-card-title strong')
@@ -633,16 +707,24 @@ try {
     await root().focus();
     await page.keyboard.type('the quick brown fox');
     await page.waitForTimeout(80);
-    assert.equal(Object.keys((await board('Feature checks.md')).tasks).length, 6, 'stray typing never creates content');
-    assert.equal(Object.keys((await board('Feature checks.md')).nodes).length, 9, 'stray typing never creates cards');
+    assert.equal(
+      Object.keys((await board('Feature checks.md')).tasks).length,
+      6,
+      'stray typing never creates content',
+    );
+    assert.equal(
+      Object.keys((await board('Feature checks.md')).nodes).length,
+      9,
+      'stray typing never creates cards',
+    );
     await root().getByRole('button', { name: 'Focus task + dependencies', exact: false }).click();
     assert.ok((await root().locator('.rb-dim').count()) > 0);
     await root().getByRole('button', { name: 'Clear focus' }).click();
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     await flush('Feature checks.md');
   });
   await test('Source-editor in-progress text is revalidated after closing; raw export command works', async () => {
-    await root().getByRole('button', { name: 'Open source', exact: true }).click();
+    await action('Open source');
     await page.waitForFunction(() => app.workspace.getMostRecentLeaf()?.view?.getMode?.() === 'source');
     await page.evaluate(() => {
       const view = app.workspace.getMostRecentLeaf().view;
@@ -660,7 +742,7 @@ try {
     await eventually(async () =>
       assert.equal((await board('Feature checks.md')).title, 'Source editor title'),
     );
-    await root().getByRole('button', { name: 'Export JSON', exact: true }).click();
+    await action('Export JSON');
     await eventually(async () => {
       const files = await page.evaluate(() => app.vault.getFiles().map((f) => f.path));
       assert.ok(files.some((f) => f.includes('Source editor title - export') && f.endsWith('.json')));
@@ -672,14 +754,19 @@ try {
     await root().getByRole('button', { name: 'Fit all', exact: true }).click();
     await page.waitForTimeout(250);
     const viewport = () => root().locator('.react-flow__viewport').getAttribute('style');
-    let before = await viewport(), zoomBefore = await zoomLabel();
+    let before = await viewport(),
+      zoomBefore = await zoomLabel();
     for (let i = 0; i < 3; i++) await wheel({ deltaX: 3.5, deltaY: 2.25, deltaMode: 0 });
     await page.waitForTimeout(100);
     assert.notEqual(await viewport(), before, 'trackpad-like deltas pan');
     assert.equal(await zoomLabel(), zoomBefore, 'panning does not change zoom');
     for (let i = 0; i < 3; i++) await wheel({ deltaX: 0, deltaY: 3, deltaMode: 1 });
     await page.waitForTimeout(150);
-    assert.ok((await root().locator('.rb-navigation [aria-label="Input device"]').getAttribute('title')).includes('mouse'));
+    assert.ok(
+      (await root().locator('.rb-navigation [aria-label="Canvas options"]').getAttribute('title')).includes(
+        'mouse',
+      ),
+    );
     zoomBefore = await zoomLabel();
     for (let i = 0; i < 3; i++) await wheel({ deltaX: 0, deltaY: 3, deltaMode: 1 });
     await page.waitForTimeout(150);
@@ -696,7 +783,11 @@ try {
       await plugin.saveData(plugin.settings);
     });
     await flush('Feature checks.md');
-    assert.equal(parse(await sourceText('Feature checks.md')).title, 'Source editor title', 'camera changes never write');
+    assert.equal(
+      parse(await sourceText('Feature checks.md')).title,
+      'Source editor title',
+      'camera changes never write',
+    );
   });
   await test('Zoom, fit, minimap, snapping and marquee selection operate without camera saves', async () => {
     await closeBoards();
@@ -709,10 +800,10 @@ try {
     await eventually(async () => assert.notEqual(await zoomLabel(), zoomBefore));
     await root().getByLabel('Reset zoom', { exact: true }).click();
     await eventually(async () => assert.equal(await zoomLabel(), '100%'));
-    await root().getByRole('button', { name: 'Map', exact: true }).click();
+    await menuAction('Canvas options', 'Minimap');
     assert.equal(await root().locator('.react-flow__minimap').count(), 1);
-    await root().getByRole('button', { name: 'Map', exact: true }).click();
-    await root().getByRole('button', { name: 'Snap', exact: true }).click();
+    await menuAction('Canvas options', 'Minimap');
+    await menuAction('Canvas options', 'Snap to grid');
     await root().getByRole('button', { name: 'Fit all', exact: true }).click();
     await page.waitForTimeout(250);
     await root().getByRole('button', { name: 'Select mode', exact: true }).click();
@@ -744,8 +835,8 @@ try {
     assert.equal(after.nodes['node-brief'].x % 16, 0);
     assert.equal(after.nodes['node-brief'].y % 16, 0);
     assert.notEqual(after.nodes['node-brief'].x, b.nodes['node-brief'].x);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
-    await root().getByRole('button', { name: 'Snap', exact: true }).click();
+    await action('Undo');
+    await menuAction('Canvas options', 'Snap to grid');
   });
   await test('Pen draws strokes, eraser removes them, undo restores, wheel still pans while drawing', async () => {
     await closeBoards();
@@ -759,12 +850,15 @@ try {
     await root().getByRole('radio', { name: 'Thick ink', exact: true }).click();
     const surface = root().locator('.rb-draw-overlay');
     const box = await surface.boundingBox();
-    const sx = box.x + box.width * 0.35, sy = box.y + box.height * 0.82;
+    const sx = box.x + box.width * 0.35,
+      sy = box.y + box.height * 0.82;
     await page.mouse.move(sx, sy);
     await page.mouse.down();
     for (let i = 1; i <= 20; i++) await page.mouse.move(sx + i * 12, sy + Math.sin(i / 3) * 24);
     await page.mouse.up();
-    await eventually(async () => assert.equal(Object.keys((await board('Feature checks.md')).ink ?? {}).length, 1));
+    await eventually(async () =>
+      assert.equal(Object.keys((await board('Feature checks.md')).ink ?? {}).length, 1),
+    );
     const stroke = Object.values((await board('Feature checks.md')).ink)[0];
     assert.equal(stroke.color, 'rose');
     assert.equal(stroke.width, 7);
@@ -779,9 +873,19 @@ try {
     await eventually(async () => assert.equal(Object.keys((await board('Feature checks.md')).ink).length, 2));
     await page.screenshot({ path: 'docs/roseboard-ink.png' });
     const viewportBefore = await root().locator('.react-flow__viewport').getAttribute('style');
-    await surface.dispatchEvent('wheel', { bubbles: true, cancelable: true, deltaX: 4, deltaY: 30, deltaMode: 0 });
+    await surface.dispatchEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaX: 4,
+      deltaY: 30,
+      deltaMode: 0,
+    });
     await page.waitForTimeout(150);
-    assert.notEqual(await root().locator('.react-flow__viewport').getAttribute('style'), viewportBefore, 'wheel pans while drawing');
+    assert.notEqual(
+      await root().locator('.react-flow__viewport').getAttribute('style'),
+      viewportBefore,
+      'wheel pans while drawing',
+    );
     await flush('Feature checks.md');
     const saved = parse(await sourceText('Feature checks.md'));
     assert.equal(Object.keys(saved.ink).length, 2);
@@ -793,12 +897,16 @@ try {
     await page.mouse.down();
     await page.mouse.move(first.x + first.width / 2, first.y + first.height + 30, { steps: 10 });
     await page.mouse.up();
-    await eventually(async () => assert.equal(Object.keys((await board('Feature checks.md')).ink ?? {}).length, 1));
+    await eventually(async () =>
+      assert.equal(Object.keys((await board('Feature checks.md')).ink ?? {}).length, 1),
+    );
     await page.keyboard.press('Escape');
     await eventually(async () => assert.equal(await root().locator('.rb-draw-overlay').count(), 0));
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     await eventually(async () => assert.equal(Object.keys((await board('Feature checks.md')).ink).length, 2));
-    await root().locator('.react-flow__pane').click({ button: 'right', position: { x: 30, y: 30 } });
+    await root()
+      .locator('.react-flow__pane')
+      .click({ button: 'right', position: { x: 30, y: 30 } });
     const clear = page.locator('.menu .menu-item', { hasText: 'Clear all ink' });
     await clear.waitFor();
     await clear.click();
@@ -806,20 +914,29 @@ try {
     await eventually(async () => assert.equal((await board('Feature checks.md')).ink, undefined));
     await flush('Feature checks.md');
     assert.equal(parse(await sourceText('Feature checks.md')).ink, undefined);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     await eventually(async () => assert.equal(Object.keys((await board('Feature checks.md')).ink).length, 2));
     // History now holds the two strokes only (the undone erase was discarded by the clear): two undos empty the board.
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
+    await action('Undo');
     await eventually(async () => assert.equal((await board('Feature checks.md')).ink, undefined));
     assert.equal(await root().getByRole('button', { name: 'Undo', exact: true }).isDisabled(), true);
     await flush('Feature checks.md');
   });
   await test('Ink written by another device is merged and highlighted like any record', async () => {
     const before = parse(await sourceText('Feature checks.md'));
-    await page.evaluate(`${session('Feature checks.md')}.edit('Local pending', (b) => { b.tasks.brief.title = 'Local title'; })`);
+    await page.evaluate(
+      `${session('Feature checks.md')}.edit('Local pending', (b) => { b.tasks.brief.title = 'Local title'; })`,
+    );
     const remote = structuredClone(before);
-    remote.ink = { remoteStroke: { points: [100, 900, 200, 950, 300, 900], color: 'sky', width: 3, updatedBy: 'Friend Phone' } };
+    remote.ink = {
+      remoteStroke: {
+        points: [100, 900, 200, 950, 300, 900],
+        color: 'sky',
+        width: 3,
+        updatedBy: 'Friend Phone',
+      },
+    };
     await writeSource('Feature checks.md', remote);
     await eventually(async () => {
       const s = await flush('Feature checks.md');
@@ -828,8 +945,15 @@ try {
       assert.ok(s.board.ink?.remoteStroke);
     });
     assert.equal(await root().locator('.rb-ink path[data-stroke="remoteStroke"]').count(), 1);
-    assert.equal((await snapshot('Feature checks.md')).activity[0].changes.some((c) => c.kind === 'ink' && c.op === 'added'), true);
-    await page.evaluate(`${session('Feature checks.md')}.edit('Clean up', (b) => { delete b.ink; b.tasks.brief.title = 'Shape the idea'; })`);
+    assert.equal(
+      (await snapshot('Feature checks.md')).activity[0].changes.some(
+        (c) => c.kind === 'ink' && c.op === 'added',
+      ),
+      true,
+    );
+    await page.evaluate(
+      `${session('Feature checks.md')}.edit('Clean up', (b) => { delete b.ink; b.tasks.brief.title = 'Shape the idea'; })`,
+    );
     await flush('Feature checks.md');
   });
   await test('Tags commit while typing, retain delimiters, and refresh after undo', async () => {
@@ -839,7 +963,7 @@ try {
     await input.fill('alpha, beta,');
     assert.equal(await input.inputValue(), 'alpha, beta,');
     assert.deepEqual((await board('Feature checks.md')).tasks.sketch.tags, ['alpha', 'beta']);
-    await root().getByRole('button', { name: 'Undo', exact: true }).click();
+    await action('Undo');
     assert.equal(await input.inputValue(), initial);
     await flush('Feature checks.md');
   });
@@ -853,7 +977,7 @@ try {
     }, raw);
     await open('Future.md');
     assert.ok((await root().innerText()).includes('Schema version 99'));
-    assert.equal(await root().locator('.rb-createbar .rb-primary').isDisabled(), true);
+    assert.equal(await root().getByLabel('New task', { exact: true }).isDisabled(), true);
     await page.waitForTimeout(500);
     assert.deepEqual(parse(await sourceText('Future.md')), raw);
     await open('Feature checks.md');
@@ -878,7 +1002,7 @@ try {
     await closeBoards();
     await open('Welcome to Roseboard.md');
     await page.setViewportSize({ width: 430, height: 900 });
-    await root().getByRole('button', { name: 'List', exact: true }).click();
+    await mode('List');
     await root().locator('.rb-list-title').nth(1).click();
     const inspector = await root().locator('.rb-inspector').boundingBox(),
       r = await root().boundingBox();

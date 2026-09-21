@@ -56,11 +56,12 @@ describe('release artifacts and visual isolation', () => {
     const css = readFileSync('styles.css', 'utf8');
     expect(css).not.toMatch(/@import|url\(["']?https?:/);
   });
-  it('publishes the JSON Schema with the v1.1 optional fields', () => {
+  it('publishes the JSON Schema with backward-compatible optional fields', () => {
     const schema = JSON.parse(readFileSync('schema/roseboard-v1.schema.json', 'utf8'));
     const task = schema.properties.tasks.additionalProperties ?? schema.properties.tasks.propertyNames;
     expect(JSON.stringify(schema)).toContain('updatedAt');
     expect(JSON.stringify(schema)).toContain('"color"');
+    expect(JSON.stringify(schema)).toContain('"assignee"');
     expect(task).toBeDefined();
   });
 });

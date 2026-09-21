@@ -1,0 +1,598 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import { readFile, writeFile, realpath } from 'node:fs/promises';
+import { join } from 'node:path';
+const runtime = JSON.parse(await readFile('.test-runtime/runtime.json', 'utf8'));
+const browser = await chromium.connectOverCDP(`http://127.0.0.1:${runtime.port}`);
+const page = browser.contexts()[0].pages()[0];
+page.setDefaultTimeout(6000);
+await page.setViewportSize({ width: 1440, height: 1000 });
+assert.equal(
+  await realpath(await page.evaluate(() => app.vault.adapter.getBasePath())),
+  await realpath(runtime.vault),
+  'Refusing to test outside the isolated vault',
+);
+const results = [],
+  errors = [],
+  requests = [];
+page.on('pageerror', (error) => errors.push(error.message));
+page.on('request', (request) => {
+  if (request.url().includes('roseboard-test.invalid')) requests.push(request.url());
+});
+const report = { version: '1.4.0', started: new Date().toISOString(), results, errors };
+const path = 'Planner acceptance.md';
+const notePath = 'Reader fixtures/Project brief.md';
+const today = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Ljubljana',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+const offset = (n) => {
+  const d = new Date(`${today}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const baseTask = (title, extra = {}) => ({
+  title,
+  description: '',
+  status: 'todo',
+  priority: 'none',
+  tags: [],
+  checklist: [],
+  dependsOn: [],
+  ...extra,
+});
+const fixture = {
+  schemaVersion: 1,
+  boardId: 'planner-acceptance',
+  title: 'Studio · Weekly rhythm',
+  timeZone: 'Europe/Ljubljana',
+  tasks: {
+    review: baseTask('Review the release brief', {
+      dueDate: today,
+      assignee: 'Anna',
+      priority: 'high',
+      notePath,
+      checklist: [
+        { id: 'scope', text: 'Confirm scope', done: true },
+        { id: 'finish', text: 'Share feedback', done: false },
+      ],
+    }),
+    draft: baseTask('Draft the weekly update', { assignee: 'Sam', priority: 'medium' }),
+    handoff: baseTask('Confirm the handoff', { dueDate: offset(-1), assignee: 'Anna' }),
+    research: baseTask('Collect reference notes', { dueDate: today, status: 'done', assignee: 'Sam' }),
+    blocked: baseTask('Publish the update', { dueDate: today, dependsOn: ['draft'] }),
+    tomorrow: baseTask('Sketch next week’s priorities', { dueDate: offset(1), assignee: 'Sam' }),
+  },
+  nodes: {
+    reviewCard: { type: 'task', taskId: 'review', x: 60, y: 100, width: 300, height: 220 },
+    docCard: { type: 'note', notePath, x: 430, y: 100, width: 420, height: 390 },
+  },
+  edges: {},
+};
+const note = `---\ntags: [project]\n---\n# Release brief\n\nA calmer workspace for shared ideas and daily progress.\n\n## The plan\n\n| Workstream | Owner |\n| --- | --- |\n| Documents | Anna |\n| Daily planning | Sam |\n\n- [x] Align on the goal\n- [ ] Review the final build\n\nSee [supporting notes](./Sibling.md#Context) and [[Reader fixtures/Sibling|wiki note]].\n\n> Keep the original notes close to the work.\n\n\`[[literal example]]\`\n\n![Do not fetch](https://roseboard-test.invalid/tracker.png)\n\n<script>window.roseboardReaderUnsafe=true</script>\n`;
+const root = () => page.locator('.roseboard-root:visible').last();
+const board = () =>
+  page.evaluate(
+    (path) =>
+      app.workspace
+        .getLeavesOfType('roseboard-view')
+        .find((l) => l.view.session?.path === path)
+        .view.session.getSnapshot().board,
+    path,
+  );
+const flush = () =>
+  page.evaluate(async (path) => {
+    const session = app.workspace.getLeavesOfType('roseboard-view').find((l) => l.view.session?.path === path)
+      .view.session;
+    await session.flush();
+  }, path);
+const eventually = async (check) => {
+  let last;
+  for (let i = 0; i < 50; i++) {
+    try {
+      await check();
+      return;
+    } catch (error) {
+      last = error;
+      await page.waitForTimeout(100);
+    }
+  }
+  throw last;
+};
+const menuAction = async (label, item) => {
+  await root().getByRole('button', { name: label, exact: true }).click();
+  await page
+    .locator('.menu .menu-item-title')
+    .filter({ hasText: new RegExp('^' + item.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') })
+    .click();
+};
+const mode = (name) => menuAction('Board view', name);
+const action = (name) => menuAction('Board actions', name);
+const search = async (value) => {
+  if (!(await root().getByRole('textbox', { name: 'Search tasks', exact: true }).count()))
+    await root().getByLabel('Toggle task search').click();
+  await root().getByRole('textbox', { name: 'Search tasks', exact: true }).fill(value);
+};
+const closeInspector = async () => {
+  const close = root().getByRole('button', { name: 'Close inspector', exact: true });
+  if (await close.count()) await close.click();
+};
+async function test(name, run) {
+  const start = Date.now();
+  try {
+    await run();
+    results.push({ name, result: 'PASS', ms: Date.now() - start });
+    console.log(`PASS ${name}`);
+  } catch (error) {
+    results.push({ name, result: 'FAIL', error: error.message });
+    console.log(`FAIL ${name}: ${error.message}`);
+    await page.screenshot({ path: `docs/failure-planner-${results.length}.png` });
+  }
+}
+try {
+  await page.evaluate(
+    async ({ path, notePath, fixture, note }) => {
+      app.workspace.getLeavesOfType('markdown').forEach((l) => l.detach());
+      app.workspace.getLeavesOfType('roseboard-view').forEach((l) => l.detach());
+      const plugin = app.plugins.plugins.roseboard;
+      await Promise.all([...plugin.noteSessions.values()].map(async (pending) => (await pending).discard()));
+      for (const draftPath of [notePath, 'Reader fixtures/Renamed brief.md'])
+        await plugin.noteStorage.draft(draftPath, null);
+      Object.assign(plugin.settings, { culling: 'off', deviceName: 'Test Mac', stamps: true });
+      app.vault.setConfig('nativeMenus', false);
+      if (!app.vault.getAbstractFileByPath('Reader fixtures'))
+        await app.vault.createFolder('Reader fixtures');
+      const recovered = app.vault.getAbstractFileByPath('Reader fixtures/Project brief - recovered.md');
+      if (recovered) await app.vault.delete(recovered);
+      const renamed = app.vault.getAbstractFileByPath('Reader fixtures/Renamed brief.md');
+      if (renamed) await app.vault.delete(renamed);
+      for (const [filePath, text] of [
+        [notePath, note],
+        ['Reader fixtures/Sibling.md', '# Context\n\nRelative link works.'],
+        ['Sibling.md', '# Wrong root sibling'],
+        [
+          path,
+          '# A shared workspace\n\n```roseboard\n' +
+            JSON.stringify(fixture, null, 2) +
+            '\n```\n\nKeep this paragraph.\n',
+        ],
+      ]) {
+        const file = app.vault.getAbstractFileByPath(filePath);
+        if (file) await app.vault.modify(file, text);
+        else await app.vault.create(filePath, text);
+      }
+      await plugin.openBoard(path);
+    },
+    { path, notePath, fixture, note },
+  );
+  await root().locator('.rb-brand strong').waitFor();
+  await test('Read expands in place; scrolling stays inside the document and the board source is unchanged', async () => {
+    await root().getByLabel('Reset zoom', { exact: true }).click();
+    const before = JSON.stringify(await board());
+    const card = root().locator('[data-id="docCard"]');
+    const size = await card.boundingBox();
+    const camera = await root().locator('.react-flow__viewport').getAttribute('style');
+    await card.getByRole('button', { name: 'Read', exact: true }).click();
+    await eventually(async () => assert.ok((await card.boundingBox()).height > size.height));
+    assert.equal(await root().locator('.rb-document-reader').count(), 0);
+    assert.equal(await root().locator('.react-flow__viewport').getAttribute('style'), camera);
+    const full =
+      note +
+      '\n' +
+      Array.from({ length: 80 }, (_, i) => `Paragraph ${i}: enough room to read the entire document.`).join(
+        '\n\n',
+      ) +
+      '\nEnd of document.';
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [notePath, full],
+    );
+    await card.getByText('End of document.', { exact: false }).waitFor();
+    const reader = card.locator('.rb-note-reading');
+    const rect = await reader.boundingBox();
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    await page.mouse.wheel(0, 350);
+    await eventually(async () => assert.ok(await reader.evaluate((el) => el.scrollTop > 0)));
+    assert.equal(await root().locator('.react-flow__viewport').getAttribute('style'), camera);
+    await reader.dispatchEvent('wheel', { bubbles: true, deltaY: 120, shiftKey: true });
+    assert.equal(await root().locator('.react-flow__viewport').getAttribute('style'), camera);
+    await page.screenshot({ path: 'docs/roseboard-canvas-reader.png' });
+    await card.getByRole('button', { name: 'Collapse', exact: true }).click();
+    await eventually(async () =>
+      assert.equal(Math.round((await card.boundingBox()).height), Math.round(size.height)),
+    );
+    assert.equal(JSON.stringify(await board()), before);
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [notePath, note],
+    );
+  });
+  await test('Double-click edits inside the card; Save preserves properties and changes only the linked note', async () => {
+    const card = root().locator('[data-id="docCard"]');
+    const before = JSON.stringify(await board());
+    await card.locator('.rb-note-preview').getByText('A calmer workspace', { exact: false }).dblclick();
+    const field = card.getByLabel('Edit document Markdown');
+    await field.waitFor();
+    assert.equal(await field.inputValue(), note);
+    await field.fill(note + '\nEdited on the canvas.\n');
+    await card.getByRole('button', { name: 'Save note', exact: true }).focus();
+    assert.equal(
+      await readFile(join(runtime.vault, notePath), 'utf8'),
+      note,
+      'blur must not discard or commit drafts',
+    );
+    await page.screenshot({ path: 'docs/roseboard-canvas-editor.png' });
+    await field.press('Meta+Enter');
+    await field.waitFor({ state: 'detached' });
+    assert.equal(await readFile(join(runtime.vault, notePath), 'utf8'), note + '\nEdited on the canvas.\n');
+    assert.equal(JSON.stringify(await board()), before);
+    await card.getByText('Edited on the canvas.').waitFor();
+  });
+  await test('Unsaved note edits survive view changes and plugin reload', async () => {
+    let card = root().locator('[data-id="docCard"]');
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').fill(note + '\nRecovered draft.\n');
+    await mode('List');
+    await mode('Canvas');
+    await root().getByLabel('Reset zoom', { exact: true }).click();
+    card = root().locator('[data-id="docCard"]');
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    assert.ok((await card.getByLabel('Edit document Markdown').inputValue()).includes('Recovered draft.'));
+    await mode('List');
+    await page.evaluate(async () => {
+      const plugin = app.plugins.plugins.roseboard;
+      app.workspace.getLeavesOfType('roseboard-view').forEach((leaf) => leaf.detach());
+      await Promise.all([...plugin.noteSessions.values()].map(async (pending) => (await pending).stash()));
+      await app.plugins.disablePlugin('roseboard');
+      await app.plugins.enablePlugin('roseboard');
+    });
+    await page.evaluate((path) => app.plugins.plugins.roseboard.openBoard(path), path);
+    await root().getByLabel('Reset zoom', { exact: true }).click();
+    card = root().locator('[data-id="docCard"]');
+    await card.getByRole('button', { name: 'Read', exact: true }).click();
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    assert.ok((await card.getByLabel('Edit document Markdown').inputValue()).includes('Recovered draft.'));
+    await card.getByText('Draft restored', { exact: true }).waitFor();
+    await card.getByRole('button', { name: 'Save note', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').waitFor({ state: 'detached' });
+  });
+  await test('A conflicting note update cannot be overwritten; the draft can be saved separately', async () => {
+    const card = root().locator('[data-id="docCard"]');
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').fill(note + '\nMy unsaved change.\n');
+    const remote = note + '\nA collaborator changed this note.\n';
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [notePath, remote],
+    );
+    await card.getByRole('button', { name: 'Save note', exact: true }).click();
+    await card.getByRole('alert').getByText('This note changed elsewhere.', { exact: false }).waitFor();
+    assert.equal(await readFile(join(runtime.vault, notePath), 'utf8'), remote);
+    await card.getByRole('button', { name: 'Save a copy', exact: true }).click();
+    await eventually(async () =>
+      assert.ok(
+        (
+          await readFile(join(runtime.vault, 'Reader fixtures/Project brief - recovered.md'), 'utf8')
+        ).includes('My unsaved change.'),
+      ),
+    );
+    await card.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('heading', { name: 'Discard note changes?', exact: true }).waitFor();
+    await page.locator('.modal').getByRole('button', { name: 'Continue', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').waitFor({ state: 'detached' });
+    assert.equal(await readFile(join(runtime.vault, notePath), 'utf8'), remote);
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [notePath, note],
+    );
+  });
+  await test('Cards of the same note share edits, and an active draft follows a file rename', async () => {
+    const shared = await page.evaluate(
+      async ({ path, notePath }) => {
+        const plugin = app.plugins.plugins.roseboard;
+        const source = app.workspace
+          .getLeavesOfType('roseboard-view')
+          .find((leaf) => leaf.view.session?.path === path).view.session;
+        const host = plugin.host(source);
+        const [one, two] = await Promise.all([host.editNote(notePath), host.editNote(notePath)]);
+        const same = one === two;
+        await one.discard();
+        return same;
+      },
+      { path, notePath },
+    );
+    assert.equal(shared, true);
+    const card = root().locator('[data-id="docCard"]');
+    await card.getByRole('button', { name: 'Edit', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').fill(note + '\nDraft during rename.\n');
+    await page.evaluate(
+      async (path) =>
+        app.fileManager.renameFile(app.vault.getAbstractFileByPath(path), 'Reader fixtures/Working brief.md'),
+      notePath,
+    );
+    await eventually(async () =>
+      assert.equal((await board()).nodes.docCard.notePath, 'Reader fixtures/Working brief.md'),
+    );
+    await card.getByRole('button', { name: 'Save note', exact: true }).click();
+    await card.getByLabel('Edit document Markdown').waitFor({ state: 'detached' });
+    assert.ok(
+      (await readFile(join(runtime.vault, 'Reader fixtures/Working brief.md'), 'utf8')).includes(
+        'Draft during rename.',
+      ),
+    );
+    await page.evaluate(
+      async ({ path, text }) => {
+        await app.fileManager.renameFile(
+          app.vault.getAbstractFileByPath('Reader fixtures/Working brief.md'),
+          path,
+        );
+        await app.vault.modify(app.vault.getAbstractFileByPath(path), text);
+      },
+      { path: notePath, text: note },
+    );
+  });
+  await test('Document cards render live Markdown; library deduplicates task and card links', async () => {
+    await root().getByLabel('Reset zoom', { exact: true }).click();
+    await root().locator('.rb-note-preview').getByText('A calmer workspace', { exact: false }).waitFor();
+    assert.equal(await root().locator('.rb-note-preview table').count(), 1);
+    await mode('Documents');
+    assert.equal(await root().getByLabel('Inspector', { exact: true }).count(), 0);
+    assert.equal(await root().getByLabel('Document list', { exact: true }).getByRole('button').count(), 1);
+    assert.ok((await root().getByLabel('Document reader').innerText()).includes('Release brief'));
+    assert.equal(await root().locator('.rb-document-page input[type=checkbox]:disabled').count(), 2);
+    assert.equal(
+      await root()
+        .locator('.rb-document-page img, .rb-document-page script, .rb-document-page iframe')
+        .count(),
+      0,
+    );
+    assert.equal(requests.length, 0);
+    assert.equal(await page.evaluate(() => window.roseboardReaderUnsafe), undefined);
+    await page.screenshot({ path: 'docs/roseboard-documents.png' });
+  });
+  await test('Reader refreshes external note edits and resolves explicit Markdown links relative to the document', async () => {
+    await page.evaluate(
+      async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
+      [notePath, note + '\nFresh content from a collaborator.\n'],
+    );
+    await root().getByLabel('Document reader').getByText('Fresh content from a collaborator.').waitFor();
+    await root()
+      .getByLabel('Document reader')
+      .getByRole('button', { name: 'supporting notes', exact: true })
+      .click();
+    await page.waitForFunction(
+      () => app.workspace.getMostRecentLeaf()?.view?.file?.path === 'Reader fixtures/Sibling.md',
+    );
+    await page.evaluate((path) => {
+      app.workspace.getLeavesOfType('markdown').forEach((l) => l.detach());
+      const leaf = app.workspace.getLeavesOfType('roseboard-view').find((l) => l.view.session?.path === path);
+      app.workspace.setActiveLeaf(leaf, { focus: true });
+    }, path);
+  });
+  await test('Document rename, deletion and restoration update the reader without altering note bodies', async () => {
+    await page.evaluate(
+      async ([oldPath, newPath]) => app.vault.rename(app.vault.getAbstractFileByPath(oldPath), newPath),
+      [notePath, 'Reader fixtures/Renamed brief.md'],
+    );
+    await eventually(async () =>
+      assert.equal((await board()).tasks.review.notePath, 'Reader fixtures/Renamed brief.md'),
+    );
+    await root().getByLabel('Document reader').getByText('Release brief', { exact: true }).waitFor();
+    await page.evaluate(async () =>
+      app.vault.delete(app.vault.getAbstractFileByPath('Reader fixtures/Renamed brief.md')),
+    );
+    await root().getByLabel('Document reader').getByText('This note is missing.', { exact: false }).waitFor();
+    await page.evaluate(async (text) => {
+      await app.vault.create('Reader fixtures/Renamed brief.md', text);
+    }, note);
+    await root().getByLabel('Document reader').getByText('Release brief', { exact: true }).waitFor();
+    assert.equal(await readFile(join(runtime.vault, 'Reader fixtures/Renamed brief.md'), 'utf8'), note);
+  });
+  await test('Library picker links a document below existing cards, avoids duplicates and supports search', async () => {
+    const before = (await board()).nodes;
+    await root().getByRole('button', { name: 'Link a document', exact: true }).click();
+    await page.locator('.prompt-input').fill('Reader fixtures/Sibling');
+    await page.locator('.suggestion-item').filter({ hasText: 'Reader fixtures/Sibling.md' }).click();
+    await root().locator('.rb-note-reading').getByText('Relative link works.').waitFor();
+    await mode('Documents');
+    const after = (await board()).nodes;
+    const added = Object.values(after).find(
+      (n) => n.type === 'note' && n.notePath === 'Reader fixtures/Sibling.md',
+    );
+    assert.ok(added.y > Math.max(...Object.values(before).map((n) => n.y + n.height)));
+    for (const [id, node] of Object.entries(before)) assert.deepEqual(after[id], node);
+    await root().getByRole('button', { name: 'Link a document', exact: true }).click();
+    await page.locator('.prompt-input').fill('Reader fixtures/Sibling');
+    await page.locator('.suggestion-item').filter({ hasText: 'Reader fixtures/Sibling.md' }).click();
+    assert.deepEqual((await board()).nodes, after);
+    await mode('Documents');
+    await root().getByLabel('Search documents').fill('Sibling');
+    assert.equal(await root().getByLabel('Document list', { exact: true }).getByRole('button').count(), 1);
+    await root().getByLabel('Search documents').fill('');
+    await action('Undo');
+    assert.deepEqual((await board()).nodes, before);
+  });
+  await test('Day view captures unplaced tasks, tracks progress, and keeps overdue work separate', async () => {
+    await mode('Day');
+    await root().getByLabel('Planner date').fill(today);
+    assert.equal(
+      await root()
+        .getByLabel('Selected day tasks', { exact: true })
+        .locator('.rb-agenda-rows > article')
+        .count(),
+      3,
+    );
+    assert.equal(await root().getByLabel('Daily task progress').getAttribute('value'), '1');
+    assert.ok((await root().getByLabel('Overdue tasks').innerText()).includes('Confirm the handoff'));
+    await root().getByLabel('New daily task').fill('Prepare the demo');
+    await root().getByLabel('New daily task').press('Enter');
+    const b = await board();
+    const [id, task] = Object.entries(b.tasks).find(([, t]) => t.title === 'Prepare the demo');
+    assert.equal(task.dueDate, today);
+    assert.ok(!Object.values(b.nodes).some((n) => n.taskId === id));
+    await root().getByRole('button', { name: 'Complete Prepare the demo', exact: true }).click();
+    assert.equal((await board()).tasks[id].status, 'done');
+    await action('Undo');
+    assert.equal((await board()).tasks[id].status, 'todo');
+    await page.screenshot({ path: 'docs/roseboard-day.png' });
+  });
+  await test('Unscheduled planning and accessible rescheduling change only the due date and undo cleanly', async () => {
+    const positions = (await board()).nodes;
+    await root().getByLabel(`Schedule Draft the weekly update for ${today}`, { exact: true }).click();
+    assert.equal((await board()).tasks.draft.dueDate, today);
+    await root().getByLabel('Reschedule Draft the weekly update', { exact: true }).click();
+    await page.locator('.menu-item').filter({ hasText: 'Tomorrow' }).click();
+    assert.equal((await board()).tasks.draft.dueDate, offset(1));
+    assert.deepEqual((await board()).nodes, positions);
+    await action('Undo');
+    assert.equal((await board()).tasks.draft.dueDate, today);
+  });
+  await test('Assignments are editable, searchable and filter the calendar and daily view', async () => {
+    await root().locator('.rb-agenda-title').filter({ hasText: 'Review the release brief' }).click();
+    await root().getByLabel('Task assignee', { exact: true }).fill('Alex');
+    await root().getByLabel('Task title', { exact: true }).click();
+    assert.equal((await board()).tasks.review.assignee, 'Alex');
+    await closeInspector();
+    await root().getByLabel('Toggle filters', { exact: true }).click();
+    await root().getByLabel('Filter assignee').selectOption('name:Alex');
+    assert.equal(await root().locator('.rb-agenda-rows > article').count(), 1);
+    await mode('Calendar');
+    assert.equal(await root().locator('.rb-calendar-task').count(), 1);
+    await root().getByRole('button', { name: 'Clear active filters', exact: true }).click();
+    await root().getByLabel('Toggle filters', { exact: true }).click();
+    await search('Alex');
+    assert.equal(await root().locator('.rb-calendar-task').count(), 1);
+    await search('');
+  });
+  await test('Calendar navigation and drag rescheduling preserve canvas positions and persist on disk', async () => {
+    const positions = (await board()).nodes;
+    const targetDate = offset(3);
+    const transfer = await page.evaluateHandle(() => new DataTransfer());
+    const task = root().locator('.rb-calendar-task').filter({ hasText: 'Review the release brief' });
+    await task.dispatchEvent('dragstart', { dataTransfer: transfer });
+    const cell = root().getByLabel(`Plan ${targetDate}`, { exact: true }).locator('..');
+    await cell.dispatchEvent('dragover', { dataTransfer: transfer });
+    await cell.dispatchEvent('drop', { dataTransfer: transfer });
+    await task.dispatchEvent('dragend', { dataTransfer: transfer });
+    await transfer.dispose();
+    assert.equal((await board()).tasks.review.dueDate, targetDate);
+    assert.deepEqual((await board()).nodes, positions);
+    await flush();
+    const source = await readFile(join(runtime.vault, path), 'utf8');
+    assert.ok(source.startsWith('# A shared workspace\n'));
+    assert.ok(source.endsWith('Keep this paragraph.\n'));
+    assert.equal(
+      JSON.parse(source.match(/```roseboard\n([\s\S]*?)\n```/)[1]).tasks.review.dueDate,
+      targetDate,
+    );
+    await root().getByLabel('Next month').click();
+    assert.notEqual((await root().getByLabel('Planner date').inputValue()).slice(0, 7), today.slice(0, 7));
+    await root().getByRole('button', { name: 'Today', exact: true }).click();
+    assert.equal(await root().getByLabel('Planner date').inputValue(), today);
+    await page.screenshot({ path: 'docs/roseboard-calendar.png' });
+  });
+  await test('Blocked completion still requires the existing confirmation', async () => {
+    await mode('Day');
+    await root().getByRole('button', { name: 'Complete Publish the update', exact: true }).click();
+    await page.getByRole('heading', { name: 'Complete a blocked task?' }).waitFor();
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    assert.equal((await board()).tasks.blocked.status, 'todo');
+  });
+  await test('Source editing makes planner controls read-only; they resume after the editor closes', async () => {
+    await action('Open source');
+    await page.evaluate((path) => {
+      const leaf = app.workspace.getLeavesOfType('roseboard-view').find((l) => l.view.session?.path === path);
+      app.workspace.setActiveLeaf(leaf, { focus: true });
+    }, path);
+    await eventually(async () => assert.ok(await root().getByLabel('New daily task').isDisabled()));
+    assert.ok(
+      await root().getByRole('button', { name: 'Complete Publish the update', exact: true }).isDisabled(),
+    );
+    await page.evaluate(() => app.workspace.getLeavesOfType('markdown').forEach((l) => l.detach()));
+    await eventually(async () => assert.ok(await root().getByLabel('New daily task').isEnabled()));
+  });
+  await test('Document and planning shortcuts never edit hidden selected canvas cards', async () => {
+    await mode('Canvas');
+    await root().locator('[data-id="reviewCard"]').click();
+    await closeInspector();
+    const before = await board();
+    for (const name of ['Documents', 'Day', 'Calendar']) {
+      await mode(name);
+      await root().focus();
+      await page.keyboard.press('ArrowRight');
+      await page.keyboard.press('Delete');
+      await page.keyboard.press('Meta+d');
+      assert.deepEqual((await board()).nodes, before.nodes);
+      assert.equal(Object.keys((await board()).tasks).length, Object.keys(before.tasks).length);
+    }
+  });
+  await test('Narrow desktop viewport keeps Day, Calendar and Documents usable without horizontal overflow', async () => {
+    await page.setViewportSize({ width: 430, height: 900 });
+    for (const name of ['Day', 'Calendar', 'Documents']) {
+      await mode(name);
+      const selector = name === 'Documents' ? '.rb-documents' : '.rb-planner';
+      const sizes = await root()
+        .locator(selector)
+        .evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
+      assert.ok(sizes.scroll <= sizes.client + 2, `${name}: ${JSON.stringify(sizes)}`);
+    }
+    await mode('Day');
+    await page.screenshot({ path: 'docs/roseboard-planner-narrow.png' });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+  await test('New in a planner uses the selected day and stays unplaced', async () => {
+    await mode('Calendar');
+    const selected = offset(4);
+    await root().getByLabel('Planner date').fill(selected);
+    const before = await board();
+    await menuAction('Add to board', 'Task');
+    await eventually(async () =>
+      assert.equal(Object.keys((await board()).tasks).length, Object.keys(before.tasks).length + 1),
+    );
+    const after = await board();
+    const task = Object.entries(after.tasks).find(([id]) => !before.tasks[id])[1];
+    assert.equal(task.dueDate, selected);
+    assert.deepEqual(after.nodes, before.nodes);
+    await closeInspector();
+    await action('Undo');
+    assert.deepEqual((await board()).tasks, before.tasks);
+  });
+  await test('Compact header and tool palette stay within desktop and narrow panes', async () => {
+    await mode('Canvas');
+    for (const width of [1440, 900, 700, 430, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      const bounds = await root()
+        .locator('.rb-toolbar')
+        .evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, height: el.clientHeight }));
+      assert.ok(bounds.scroll <= bounds.client + 1, `${width}: ${JSON.stringify(bounds)}`);
+      if (width >= 900) assert.ok(bounds.height <= 54, JSON.stringify(bounds));
+      const canvas = await root().locator('.rb-canvas').boundingBox();
+      const dock = await root().getByLabel('Canvas tools').boundingBox();
+      assert.ok(dock.x >= canvas.x && dock.x + dock.width <= canvas.x + canvas.width + 1);
+      await menuAction('Canvas options', 'Minimap');
+      assert.equal(await root().locator('.react-flow__minimap').count(), 1);
+      await menuAction('Canvas options', 'Minimap');
+    }
+    await page.screenshot({ path: 'docs/roseboard-toolbar-narrow.png' });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+  });
+  await test('Reopening preserves assignments and dates, and creates no copied document body', async () => {
+    await flush();
+    const expected = await board();
+    await page.evaluate(() => app.workspace.getLeavesOfType('roseboard-view').forEach((l) => l.detach()));
+    await page.waitForTimeout(200);
+    await page.evaluate(async (path) => app.plugins.plugins.roseboard.openBoard(path), path);
+    await root().locator('.rb-brand strong').waitFor();
+    assert.deepEqual(await board(), expected);
+    assert.ok(!JSON.stringify(await board()).includes('A calmer workspace'));
+    await mode('Day');
+  });
+} finally {
+  report.finished = new Date().toISOString();
+  report.remoteImageRequests = requests;
+  await writeFile('docs/planner-test-results.json', JSON.stringify(report, null, 2) + '\n');
+  await browser.close();
+}
+if (errors.length || requests.length || results.some((r) => r.result === 'FAIL')) process.exitCode = 1;

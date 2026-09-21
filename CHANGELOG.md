@@ -1,5 +1,28 @@
 # Changelog
 
+## Distribution — 2026-09-21
+
+- Consolidated development onto main and published the tested 1.4.0 build in the public plugin repository. Added installation links and structured feedback forms. Version 1.4.0 is the sole supported downloadable release; older work remains in Git history.
+
+## 1.4.0 — 2026-09-20
+
+- Rebuilt the header around a compact view picker, on-demand task search, filters, a New menu, and one board-actions menu. Canvas tools live in a floating palette with active states, labels on hover/focus, and existing keyboard shortcuts. Navigation preferences are grouped under Canvas options.
+- Read expands a linked note or task's note on the canvas into a scrollable document. Collapse restores the original card size; neither action changes saved positions, dimensions, or the camera. The Documents library remains available through the view picker.
+- Double-click document content (or choose Edit) to edit the original Markdown inside the card. Save / Cmd-or-Ctrl+Enter commits; Cancel confirms discarding a dirty draft. Frontmatter is retained. Exact-baseline Vault.process writes refuse concurrent replacements, and Save a copy preserves a conflicting draft separately.
+- Note editing sessions are shared across cards/views. Debounced recovery drafts survive view changes and plugin reloads; active drafts follow note/folder renames. Source editors, board-containing notes, and notes over 100,000 characters are guarded. Board undo remains separate from note editing.
+- Contained document wheel events, prevented note interaction from opening the inspector, and made Escape cancellation of task/sticky/frame inline text ignore the following blur.
+- No schema migration or new board fields. Design references and decisions are recorded in docs/UI-RESEARCH.md; verification is recorded in docs/TEST-REPORT.md.
+
+## 1.3.0 — 2026-09-19
+
+### Documents and daily planning
+- Live Markdown previews inside vault-note cards and the inspector, plus a Documents library and full in-board reader. Previews refresh on note changes, handle missing notes, and keep the original note as the source of truth. Tables, read-only checklists and wiki links are supported; code remains literal, raw HTML is skipped, and remote images do not load.
+- Day view with quick task capture, daily completion progress, overdue work and an Unscheduled tray. Tasks created here remain unplaced until explicitly placed on the canvas.
+- Monday-first month calendar with a selected-day agenda. Drag tasks onto dates or use the Reschedule menu; dates change without moving cards. All planning uses existing task due dates and the board timezone.
+- Optional task assignees with suggestions, card/list/kanban visibility, owner search, and Everyone / Unassigned / person filters. Assignments participate in existing stamps, undo, structural merging and overlap review.
+- Visible Clear active filters action, larger new document cards, responsive planning and reading layouts, and canvas-only placement shortcuts to prevent hidden card edits in other views.
+- Version stays compatible with schema 1. The only new persisted field is optional `tasks[id].assignee`; document bodies, calendar cells and view state are not copied into board data.
+
 ## 1.2.1 — 2026-09-18
 
 ### Community directory preparation

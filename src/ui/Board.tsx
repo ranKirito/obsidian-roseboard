@@ -35,6 +35,7 @@ import {
   localDate,
   matches,
   newId,
+  newTask,
   overdue,
   priorities,
   statuses,
@@ -62,6 +63,8 @@ import type { Change, Overlap } from '../domain/merge';
 import { nodeTypes, formatDue, type FlowNode, type CardData } from './Nodes';
 import { Inspector } from './Inspector';
 import { Kanban } from './Kanban';
+import { Documents } from './Documents';
+import { Planner } from './Planner';
 import { DrawOverlay, InkLayer, inkColor, inkWidths, type InkStyle, type Tool } from './Ink';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
 import type { BoardHost, InputDevice, MenuItemSpec } from './ports';
@@ -69,7 +72,15 @@ const snapGrid: [number, number] = [16, 16];
 const multiKeys = ['Shift', 'Meta', 'Control'];
 const CULL_THRESHOLD = 120;
 const RECENT_MS = 4500;
-type Mode = 'canvas' | 'list' | 'kanban';
+type Mode = 'canvas' | 'list' | 'kanban' | 'day' | 'calendar' | 'documents';
+const views: { mode: Mode; label: string; icon: string }[] = [
+  { mode: 'canvas', label: 'Canvas', icon: 'layout-dashboard' },
+  { mode: 'kanban', label: 'Kanban', icon: 'columns-3' },
+  { mode: 'list', label: 'List', icon: 'list' },
+  { mode: 'day', label: 'Day', icon: 'sun' },
+  { mode: 'calendar', label: 'Calendar', icon: 'calendar-days' },
+  { mode: 'documents', label: 'Documents', icon: 'book-open' },
+];
 export function BoardApp({ host, preview = false }: { host: BoardHost; preview?: boolean }) {
   return (
     <ReactFlowProvider>
@@ -94,8 +105,49 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode>('canvas');
+  const [plannerDate, setPlannerDate] = useState('');
+  const [documentPath, setDocumentPath] = useState<string>();
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const expandNote = useCallback((id: string, expanded: boolean) => {
+    setExpandedNotes((current) => {
+      const next = new Set(current);
+      if (expanded) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+  const previewNote = useCallback(
+    (path: string) => {
+      const current = host.session.getSnapshot().board;
+      const entry =
+        Object.entries(current?.nodes ?? {}).find(
+          ([, node]) => node.type === 'note' && node.notePath === path,
+        ) ??
+        Object.entries(current?.nodes ?? {}).find(
+          ([, node]) => node.type === 'task' && current?.tasks[node.taskId]?.notePath === path,
+        );
+      if (entry) {
+        setMode('canvas');
+        expandNote(entry[0], true);
+        setInspector(false);
+        requestAnimationFrame(
+          () =>
+            void flow.setCenter(entry[1].x + 260, entry[1].y + 260, {
+              zoom: Math.max(flow.getZoom(), 0.8),
+              duration: reduceMotion() ? 0 : 180,
+            }),
+        );
+        return;
+      }
+      setDocumentPath(path);
+      setMode('documents');
+      setInspector(false);
+    },
+    [host, flow, expandNote],
+  );
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [tool, setTool] = useState<Tool>(host.platform.touch ? 'hand' : 'select');
   const hand = tool === 'hand';
   const drawing = tool === 'pen' || tool === 'eraser';
@@ -161,6 +213,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     if (!element) return;
     let streak = 0;
     const handler = (e: WheelEvent) => {
+      if ((e.target as HTMLElement).closest('.nowheel')) return;
       if (prefs.input === 'auto') {
         // Two consistent events in a row switch the interpretation; one stray event never does.
         const mouse = looksLikeMouseWheel(e);
@@ -294,6 +347,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
           const task = node.type === 'task' ? board.tasks[node.taskId] : undefined;
           const path = task?.notePath ?? (node.type === 'note' ? node.notePath : undefined);
           const count = members.get(id);
+          const expanded = !!path && expandedNotes.has(id);
+          const width = expanded ? Math.max(node.width, Math.min(node.width + 160, 560)) : node.width;
+          const height = expanded ? Math.max(node.height, Math.min(node.height + 200, 560)) : node.height;
           const data: CardData = {
             node,
             task,
@@ -301,6 +357,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
             readOnly,
             today,
             complete,
+            previewNote,
+            expanded,
+            expandNote,
             resize,
             begin,
             setText,
@@ -325,28 +384,48 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
             existing.className === className &&
             existing.position.x === node.x &&
             existing.position.y === node.y &&
-            existing.width === node.width &&
-            existing.height === node.height
+            existing.width === width &&
+            existing.height === height
           )
             return existing;
           return {
             id,
             type: 'card',
             position: { x: node.x, y: node.y },
-            width: node.width,
-            height: node.height,
-            style: { width: node.width, height: node.height, pointerEvents: node.type === 'frame' ? 'none' : 'all' },
+            width,
+            height,
+            style: {
+              width,
+              height,
+              pointerEvents: node.type === 'frame' ? 'none' : 'all',
+            },
             data: same ? previous : data,
             selected: existing?.selected ?? false,
             className,
-            zIndex: node.type === 'frame' ? -1 : 1,
+            zIndex: expanded ? 5 : node.type === 'frame' ? -1 : 1,
             dragHandle: node.type === 'frame' ? '.rb-frame-label' : undefined,
           };
         });
       for (const id of cache.current.keys()) if (!board.nodes[id]) cache.current.delete(id);
       return next;
     });
-  }, [board, host, readOnly, complete, resize, begin, setText, matching, focused, today, noteRevision, recent]);
+  }, [
+    board,
+    host,
+    readOnly,
+    complete,
+    previewNote,
+    expandedNotes,
+    expandNote,
+    resize,
+    begin,
+    setText,
+    matching,
+    focused,
+    today,
+    noteRevision,
+    recent,
+  ]);
   const baseEdges = useMemo<Edge[]>(() => {
     if (!board) return [];
     const list: Edge[] = Object.entries(board.edges).map(([id, e]) => ({
@@ -386,7 +465,12 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     const next = baseEdges.map((e) => {
       const selected = selectedEdge === e.id;
       const previous = edgeCache.current.get(e.id);
-      if (previous && previous.selected === selected && previous.label === e.label && previous.className === e.className)
+      if (
+        previous &&
+        previous.selected === selected &&
+        previous.label === e.label &&
+        previous.className === e.className
+      )
         return previous;
       const edge = { ...e, selected };
       edgeCache.current.set(e.id, edge);
@@ -461,17 +545,28 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     [connectNodes],
   );
   const selectOnly = useCallback(
-    (ids: string[]) => setNodes((ns) => ns.map((n) => (n.selected === ids.includes(n.id) ? n : { ...n, selected: ids.includes(n.id) }))),
+    (ids: string[]) =>
+      setNodes((ns) =>
+        ns.map((n) => (n.selected === ids.includes(n.id) ? n : { ...n, selected: ids.includes(n.id) })),
+      ),
     [],
   );
   const createAt = useCallback(
-    (type: 'task' | 'sticky' | 'frame' | 'note', position: { x: number; y: number }, extra?: { title?: string; path?: string }) => {
+    (
+      type: 'task' | 'sticky' | 'frame' | 'note',
+      position: { x: number; y: number },
+      extra?: { title?: string; path?: string },
+    ) => {
       let id = '';
       edit(`Create ${type}`, (b) => {
         if (type === 'task') id = addTask(b, position.x, position.y, extra?.title);
         else {
           id = newId('node');
-          const base = { ...position, width: type === 'frame' ? 700 : 300, height: type === 'frame' ? 480 : 220 };
+          const base = {
+            ...position,
+            width: type === 'frame' ? 700 : type === 'note' ? 380 : 300,
+            height: type === 'frame' ? 480 : type === 'note' ? 340 : 220,
+          };
           b.nodes[id] =
             type === 'sticky'
               ? { ...base, type, content: 'A little space to think.\n\nDouble-click to edit.' }
@@ -503,7 +598,12 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
       let id = '';
       edit('Create linked task', (b) => {
         id = addTask(b, at.x - 20, at.y - 20);
-        if (kind === 'dependency') setDependency(b, (b.nodes[from] as { taskId: string }).taskId, (b.nodes[id] as { taskId: string }).taskId);
+        if (kind === 'dependency')
+          setDependency(
+            b,
+            (b.nodes[from] as { taskId: string }).taskId,
+            (b.nodes[id] as { taskId: string }).taskId,
+          );
         else b.edges[newId('edge')] = { source: from, target: id, label: connectLabel };
       });
       setInspector(true);
@@ -547,9 +647,21 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
   const create = (type: 'task' | 'sticky' | 'frame' | 'note', position = viewCenter()) => {
     if (type === 'note')
       void host.pickNote().then((path) => {
-        if (path) createAt('note', position, { path });
+        if (path) {
+          setMode('canvas');
+          createAt('note', position, { path });
+        }
       });
-    else createAt(type, position);
+    else if (type === 'task' && (mode === 'day' || mode === 'calendar')) {
+      const id = newId('task');
+      edit('Create daily task', (b) => {
+        b.tasks[id] = { ...newTask('Untitled task'), dueDate: plannerDate || today };
+      });
+      selectTask(id);
+    } else {
+      if (mode === 'documents' || type !== 'task') setMode('canvas');
+      createAt(type, position);
+    }
   };
   const remove = () => {
     if (!selectedIds.length && !selectedEdge) return;
@@ -582,7 +694,12 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     });
   const fit = () => void flow.fitView({ padding: 0.15, minZoom: 0.15, maxZoom: 1, duration: animate });
   const fitSelection = () =>
-    void flow.fitView({ nodes: selectedIds.map((id) => ({ id })), padding: 0.25, maxZoom: 1.5, duration: animate });
+    void flow.fitView({
+      nodes: selectedIds.map((id) => ({ id })),
+      padding: 0.25,
+      maxZoom: 1.5,
+      duration: animate,
+    });
   const selectAll = () => selectOnly(nodes.map((n) => n.id));
   const keyDown = (e: KeyboardEvent) => {
     if (preview || (e.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]'))
@@ -596,7 +713,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     if (mod && key === 'z') {
       handled();
       e.shiftKey ? host.session.redo() : host.session.undo();
-    } else if (mod && key === 'd') {
+    } else if (mod && key === 'd' && mode === 'canvas') {
       handled();
       duplicateSelected();
     } else if (mod && key === 'a' && mode === 'canvas') {
@@ -604,11 +721,18 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
       selectAll();
     } else if (mod && key === 'f') {
       handled();
-      root.current?.querySelector<HTMLInputElement>('.rb-search')?.focus();
+      setSearchOpen(true);
+      requestAnimationFrame(() =>
+        root.current
+          ?.querySelector<HTMLInputElement>(
+            mode === 'documents' ? '[aria-label="Search documents"]' : '.rb-search',
+          )
+          ?.focus(),
+      );
     } else if (mod && key === 'enter' && taskId) {
       handled();
       complete(taskId);
-    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && mode === 'canvas') {
       handled();
       remove();
     } else if (e.key === 'Escape') {
@@ -622,7 +746,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
         setFocusTask(undefined);
       }
     } else if (mod || e.altKey) return;
-    else if (e.key.startsWith('Arrow') && selectedIds.length && !readOnly) {
+    else if (e.key.startsWith('Arrow') && selectedIds.length && !readOnly && mode === 'canvas') {
       handled();
       const step = e.shiftKey ? 32 : 8;
       const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
@@ -644,9 +768,15 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
   shortcutActions.current = {
     undo: host.session.undo,
     redo: host.session.redo,
-    duplicate: duplicateSelected,
-    remove,
-    selectAll,
+    duplicate: () => {
+      if (mode === 'canvas') duplicateSelected();
+    },
+    remove: () => {
+      if (mode === 'canvas') remove();
+    },
+    selectAll: () => {
+      if (mode === 'canvas') selectAll();
+    },
   };
   useEffect(() => {
     const element = root.current;
@@ -679,21 +809,32 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     if (kind === 'ink') return 'a stroke';
     if (kind === 'board') return 'the board';
     const n = b.nodes[id];
-    return n?.type === 'task' ? (b.tasks[n.taskId]?.title ?? 'a card') : n?.type === 'frame' ? n.title : n?.type === 'note' ? n.notePath : 'a note';
+    return n?.type === 'task'
+      ? (b.tasks[n.taskId]?.title ?? 'a card')
+      : n?.type === 'frame'
+        ? n.title
+        : n?.type === 'note'
+          ? n.notePath
+          : 'a note';
   };
   const describe = (c: Change) => {
     const b = board!;
     const name = `“${titleOf(b, c.kind, c.id)}”`;
     if (c.kind === 'ink') return c.op === 'removed' ? 'erased a stroke' : 'drew a stroke';
     if (c.op === 'added') return `added ${name}`;
-    if (c.op === 'removed') return `removed ${c.kind === 'node' ? 'a card' : c.kind === 'task' ? 'a task' : 'a connector'}`;
-    const f = c.fields.map((x) => (x === 'position' ? 'moved' : x === 'size' ? 'resized' : `changed ${x} of`));
+    if (c.op === 'removed')
+      return `removed ${c.kind === 'node' ? 'a card' : c.kind === 'task' ? 'a task' : 'a connector'}`;
+    const f = c.fields.map((x) =>
+      x === 'position' ? 'moved' : x === 'size' ? 'resized' : `changed ${x} of`,
+    );
     return `${f.join(', ')} ${name}`;
   };
   const describeOverlap = (o: Overlap) => {
     const name = board ? `“${titleOf(board, o.kind, o.id)}”` : o.id;
-    if (o.field === 'removed') return `${name} was ${o.chosen === 'mine' ? 'removed elsewhere but edited here' : 'removed here but edited elsewhere'}`;
-    if (o.field === 'duplicate placement') return `${name} was placed on both devices; the synced card was kept`;
+    if (o.field === 'removed')
+      return `${name} was ${o.chosen === 'mine' ? 'removed elsewhere but edited here' : 'removed here but edited elsewhere'}`;
+    if (o.field === 'duplicate placement')
+      return `${name} was placed on both devices; the synced card was kept`;
     if (o.field === 'orphan') return `A card whose task no longer exists was removed`;
     return `${o.field} of ${name} changed on both sides; ${o.chosen === 'mine' ? 'your' : 'their'} value was kept`;
   };
@@ -707,36 +848,121 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     if (task && single?.type === 'task') {
       const tid = single.taskId;
       items.push(
-        { title: task.status === 'done' ? 'Reopen task' : 'Complete task', icon: 'circle-check-big', disabled: readOnly, action: () => complete(tid) },
-        { title: 'Edit details', icon: 'pencil', action: () => { setSelectedTask(undefined); setSelectedEdge(undefined); setInspector(true); } },
-        { title: 'Focus task + dependencies', icon: 'focus', action: () => { setFocusTask(tid); jump(tid); } },
+        {
+          title: task.status === 'done' ? 'Reopen task' : 'Complete task',
+          icon: 'circle-check-big',
+          disabled: readOnly,
+          action: () => complete(tid),
+        },
+        {
+          title: 'Edit details',
+          icon: 'pencil',
+          action: () => {
+            setSelectedTask(undefined);
+            setSelectedEdge(undefined);
+            setInspector(true);
+          },
+        },
+        {
+          title: 'Focus task + dependencies',
+          icon: 'focus',
+          action: () => {
+            setFocusTask(tid);
+            jump(tid);
+          },
+        },
         { separator: true },
         { title: 'Status', label: true },
-        ...statuses.map((s) => ({ title: statusLabel[s]!, icon: statusIcon[s], checked: task.status === s, disabled: readOnly, action: () => (s === 'done' ? complete(tid) : edit('Change task status', (b) => setStatus(b, tid, s))) })),
+        ...statuses.map((s) => ({
+          title: statusLabel[s]!,
+          icon: statusIcon[s],
+          checked: task.status === s,
+          disabled: readOnly,
+          action: () =>
+            s === 'done' ? complete(tid) : edit('Change task status', (b) => setStatus(b, tid, s)),
+        })),
         { separator: true },
         { title: 'Priority', label: true },
-        ...priorities.map((p) => ({ title: p, icon: priorityIcon[p] || 'minus', checked: task.priority === p, disabled: readOnly, action: () => edit('Change priority', (b) => { b.tasks[tid]!.priority = p; }) })),
+        ...priorities.map((p) => ({
+          title: p,
+          icon: priorityIcon[p] || 'minus',
+          checked: task.priority === p,
+          disabled: readOnly,
+          action: () =>
+            edit('Change priority', (b) => {
+              b.tasks[tid]!.priority = p;
+            }),
+        })),
         { separator: true },
       );
-      if (task.notePath) items.push({ title: 'Open linked note', icon: 'file-text', action: () => host.openNote(task.notePath!) });
+      if (task.notePath)
+        items.push({
+          title: 'Open linked note',
+          icon: 'file-text',
+          action: () => host.openNote(task.notePath!),
+        });
     }
-    if (single?.type === 'note') items.push({ title: 'Open note', icon: 'file-text', action: () => host.openNote(single.notePath) });
+    if (single?.type === 'note')
+      items.push({ title: 'Open note', icon: 'file-text', action: () => host.openNote(single.notePath) });
     items.push(
       { title: 'Colour', label: true },
-      { title: 'None', icon: 'slash', checked: ids.every((id) => !board.nodes[id]?.color), disabled: readOnly, action: () => colorSelected(undefined) },
-      ...colors.map((c) => ({ title: c, icon: 'circle', checked: ids.every((id) => board.nodes[id]?.color === c), disabled: readOnly, action: () => colorSelected(c) })),
+      {
+        title: 'None',
+        icon: 'slash',
+        checked: ids.every((id) => !board.nodes[id]?.color),
+        disabled: readOnly,
+        action: () => colorSelected(undefined),
+      },
+      ...colors.map((c) => ({
+        title: c,
+        icon: 'circle',
+        checked: ids.every((id) => board.nodes[id]?.color === c),
+        disabled: readOnly,
+        action: () => colorSelected(c),
+      })),
       { separator: true },
       { title: 'Duplicate', icon: 'copy', disabled: readOnly, action: duplicateSelected },
       { title: 'Fit selection', icon: 'scan', action: fitSelection },
     );
     if (ids.length > 1)
       items.push(
-        { title: 'Align left', icon: 'align-start-vertical', disabled: readOnly, action: () => edit('Align', (b) => align(b, ids, 'left')) },
-        { title: 'Align top', icon: 'align-start-horizontal', disabled: readOnly, action: () => edit('Align', (b) => align(b, ids, 'top')) },
-        { title: 'Distribute horizontally', icon: 'align-horizontal-space-around', disabled: readOnly, action: () => edit('Distribute', (b) => align(b, ids, 'space-x')) },
-        { title: 'Distribute vertically', icon: 'align-vertical-space-around', disabled: readOnly, action: () => edit('Distribute', (b) => align(b, ids, 'space-y')) },
+        {
+          title: 'Align left',
+          icon: 'align-start-vertical',
+          disabled: readOnly,
+          action: () => edit('Align', (b) => align(b, ids, 'left')),
+        },
+        {
+          title: 'Align top',
+          icon: 'align-start-horizontal',
+          disabled: readOnly,
+          action: () => edit('Align', (b) => align(b, ids, 'top')),
+        },
+        {
+          title: 'Distribute horizontally',
+          icon: 'align-horizontal-space-around',
+          disabled: readOnly,
+          action: () => edit('Distribute', (b) => align(b, ids, 'space-x')),
+        },
+        {
+          title: 'Distribute vertically',
+          icon: 'align-vertical-space-around',
+          disabled: readOnly,
+          action: () => edit('Distribute', (b) => align(b, ids, 'space-y')),
+        },
       );
-    items.push({ separator: true }, { title: ids.length > 1 ? 'Remove cards' : 'Remove card', icon: 'x', disabled: readOnly, action: () => { selectOnly(ids); edit('Remove selection', (b) => removePlacements(b, ids)); } });
+    items.push(
+      { separator: true },
+      {
+        title: ids.length > 1 ? 'Remove cards' : 'Remove card',
+        icon: 'x',
+        disabled: readOnly,
+        action: () => {
+          selectOnly(ids);
+          edit('Remove selection', (b) => removePlacements(b, ids));
+        },
+      },
+    );
     if (task && single?.type === 'task')
       items.push({
         title: 'Delete task…',
@@ -744,9 +970,20 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
         warning: true,
         disabled: readOnly,
         action: () => {
-          void host.confirm('Delete task?', 'This deletes the task record, its card, and references to it in prerequisites. You can undo this action.').then((ok) => {
-            if (ok) edit('Delete task', (b) => { removePlacements(b, ids); delete b.tasks[single.taskId]; for (const t of Object.values(b.tasks)) t.dependsOn = t.dependsOn.filter((d) => d !== single.taskId); });
-          });
+          void host
+            .confirm(
+              'Delete task?',
+              'This deletes the task record, its card, and references to it in prerequisites. You can undo this action.',
+            )
+            .then((ok) => {
+              if (ok)
+                edit('Delete task', (b) => {
+                  removePlacements(b, ids);
+                  delete b.tasks[single.taskId];
+                  for (const t of Object.values(b.tasks))
+                    t.dependsOn = t.dependsOn.filter((d) => d !== single.taskId);
+                });
+            });
         },
       });
     host.showMenu({ x: event.clientX, y: event.clientY }, items);
@@ -757,7 +994,12 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     const at = flow.screenToFlowPosition({ x: event.clientX, y: event.clientY });
     host.showMenu({ x: event.clientX, y: event.clientY }, [
       { title: 'New task here', icon: 'plus', disabled: readOnly, action: () => createAt('task', at) },
-      { title: 'New note here', icon: 'sticky-note', disabled: readOnly, action: () => createAt('sticky', at) },
+      {
+        title: 'New note here',
+        icon: 'sticky-note',
+        disabled: readOnly,
+        action: () => createAt('sticky', at),
+      },
       { title: 'New frame here', icon: 'frame', disabled: readOnly, action: () => createAt('frame', at) },
       { title: 'Vault note here…', icon: 'link', disabled: readOnly, action: () => create('note', at) },
       { separator: true },
@@ -765,8 +1007,18 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
       { title: 'Fit all', icon: 'maximize', action: fit },
       { title: 'Zoom to 100 %', icon: 'search', action: () => void flow.zoomTo(1, { duration: animate }) },
       { separator: true },
-      { title: 'Snap to grid', icon: 'grid-2x2', checked: prefs.snap, action: () => updatePreference('snap', !prefs.snap) },
-      { title: 'Minimap', icon: 'map', checked: prefs.minimap, action: () => updatePreference('minimap', !prefs.minimap) },
+      {
+        title: 'Snap to grid',
+        icon: 'grid-2x2',
+        checked: prefs.snap,
+        action: () => updatePreference('snap', !prefs.snap),
+      },
+      {
+        title: 'Minimap',
+        icon: 'map',
+        checked: prefs.minimap,
+        action: () => updatePreference('minimap', !prefs.minimap),
+      },
       { separator: true },
       { title: 'Draw here', icon: 'pen-line', disabled: readOnly, action: () => setTool('pen') },
       {
@@ -775,9 +1027,14 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
         disabled: readOnly || !inkCount,
         warning: true,
         action: () => {
-          void host.confirm('Clear all ink?', `This removes ${inkCount} stroke${inkCount === 1 ? '' : 's'} from the board. You can undo this action.`).then((ok) => {
-            if (ok) edit('Clear ink', (b) => clearInk(b));
-          });
+          void host
+            .confirm(
+              'Clear all ink?',
+              `This removes ${inkCount} stroke${inkCount === 1 ? '' : 's'} from the board. You can undo this action.`,
+            )
+            .then((ok) => {
+              if (ok) edit('Clear ink', (b) => clearInk(b));
+            });
         },
       },
     ]);
@@ -787,19 +1044,44 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     if (preview) return;
     const dependency = edge.id.startsWith('dependency:');
     host.showMenu({ x: event.clientX, y: event.clientY }, [
-      { title: dependency ? 'Prerequisite → dependent' : edge.label ? `“${String(edge.label)}”` : 'Relationship', label: true },
-      ...(!dependency ? [{ title: 'Edit label', icon: 'pencil', action: () => { setSelectedEdge(edge.id); setSelectedTask(undefined); selectOnly([]); setInspector(true); } }] : []),
+      {
+        title: dependency
+          ? 'Prerequisite → dependent'
+          : edge.label
+            ? `“${String(edge.label)}”`
+            : 'Relationship',
+        label: true,
+      },
+      ...(!dependency
+        ? [
+            {
+              title: 'Edit label',
+              icon: 'pencil',
+              action: () => {
+                setSelectedEdge(edge.id);
+                setSelectedTask(undefined);
+                selectOnly([]);
+                setInspector(true);
+              },
+            },
+          ]
+        : []),
       {
         title: dependency ? 'Remove dependency' : 'Remove connector',
         icon: 'unlink',
         disabled: readOnly,
         action: () =>
           edit('Remove connector', (b) => {
-            if (dependency) setDependency(b, String(edge.data!.prerequisite), String(edge.data!.dependent), false);
+            if (dependency)
+              setDependency(b, String(edge.data!.prerequisite), String(edge.data!.dependent), false);
             else delete b.edges[edge.id];
           }),
       },
     ]);
+  };
+  const menu = (event: ReactMouseEvent, items: MenuItemSpec[]) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    host.showMenu({ x: rect.left, y: rect.bottom + 5 }, items);
   };
   const inputMenu = (event: ReactMouseEvent) => {
     const options: [InputDevice, string, string][] = [
@@ -807,12 +1089,35 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
       ['trackpad', 'Trackpad · scroll pans, pinch zooms', 'touchpad'],
       ['mouse', 'Mouse · wheel zooms, drag pans', 'mouse'],
     ];
-    host.showMenu({ x: event.clientX, y: event.clientY }, [
+    menu(event, [
+      {
+        title: 'Snap to grid',
+        icon: 'grid-2x2',
+        checked: prefs.snap,
+        action: () => updatePreference('snap', !prefs.snap),
+      },
+      {
+        title: 'Minimap',
+        icon: 'map',
+        checked: prefs.minimap,
+        action: () => updatePreference('minimap', !prefs.minimap),
+      },
+      { separator: true },
       { title: `Input · now ${wheelZooms ? 'mouse' : 'trackpad'}`, label: true },
-      ...options.map(([value, title, icon]) => ({ title, icon, checked: prefs.input === value, action: () => updatePreference('input', value) })),
+      ...options.map(([value, title, icon]) => ({
+        title,
+        icon,
+        checked: prefs.input === value,
+        action: () => updatePreference('input', value),
+      })),
       { separator: true },
       { title: 'Render only visible cards', label: true },
-      ...(['auto', 'on', 'off'] as const).map((value) => ({ title: value === 'auto' ? `Automatic (over ${CULL_THRESHOLD} cards)` : value === 'on' ? 'Always' : 'Never', checked: prefs.culling === value, action: () => updatePreference('culling', value) })),
+      ...(['auto', 'on', 'off'] as const).map((value) => ({
+        title:
+          value === 'auto' ? `Automatic (over ${CULL_THRESHOLD} cards)` : value === 'on' ? 'Always' : 'Never',
+        checked: prefs.culling === value,
+        action: () => updatePreference('culling', value),
+      })),
     ]);
   };
   const listTasks = useMemo(() => {
@@ -821,13 +1126,20 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     const rank = { high: 0, medium: 1, low: 2, none: 3 };
     const order: Record<Status, number> = { doing: 0, todo: 1, backlog: 2, done: 3 };
     if (sort === 'title') rows.sort((a, b) => a[1].title.localeCompare(b[1].title));
-    else if (sort === 'due') rows.sort((a, b) => (a[1].dueDate ?? '9999').localeCompare(b[1].dueDate ?? '9999'));
+    else if (sort === 'due')
+      rows.sort((a, b) => (a[1].dueDate ?? '9999').localeCompare(b[1].dueDate ?? '9999'));
     else if (sort === 'priority') rows.sort((a, b) => rank[a[1].priority] - rank[b[1].priority]);
     else if (sort === 'status') rows.sort((a, b) => order[a[1].status] - order[b[1].status]);
     return rows;
   }, [board, matching, sort]);
   const unseen = Math.max(0, state.activity.length - seenActivity);
-  const saveIcon = { 'Saved locally': 'check', Saving: 'loader', Unsaved: 'circle-dot', Conflict: 'alert-triangle', Error: 'octagon-alert' }[state.status];
+  const saveIcon = {
+    'Saved locally': 'check',
+    Saving: 'loader',
+    Unsaved: 'circle-dot',
+    Conflict: 'alert-triangle',
+    Error: 'octagon-alert',
+  }[state.status];
   return (
     <div
       className={`roseboard-root${preview ? ' rb-preview' : ''}${zoom < 0.5 ? ' rb-zoom-low' : ''}${hand ? ' rb-hand' : drawing ? ' rb-draw' : ' rb-select'}`}
@@ -840,92 +1152,210 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
           <span className="rb-logo">
             <RoseMark />
           </span>
-          <div>
-            <strong>{board?.title ?? 'Roseboard'}</strong>
-            <small>
-              {preview
-                ? 'Board preview'
-                : `${board ? Object.keys(board.tasks).length : 0} tasks${unplaced.length ? ` · ${unplaced.length} unplaced` : ''}${state.activity[0]?.by ? ` · last change from ${state.activity[0].by}` : ''}`}
-            </small>
-          </div>
+          <strong title={board?.title}>{board?.title ?? 'Roseboard'}</strong>
+          <span className="rb-task-count" title="Tasks">
+            {board ? Object.keys(board.tasks).length : 0}
+          </span>
         </div>
         {!preview && (
           <>
-            <div className="rb-segment" aria-label="Board view">
-              <button className={mode === 'canvas' ? 'is-active' : ''} onClick={() => setMode('canvas')}>
-                <Icon name="layout-dashboard" />
-                Canvas
-              </button>
-              <button className={mode === 'kanban' ? 'is-active' : ''} onClick={() => setMode('kanban')}>
-                <Icon name="columns-3" />
-                Kanban
-              </button>
-              <button className={mode === 'list' ? 'is-active' : ''} onClick={() => setMode('list')}>
-                <Icon name="list" />
-                List
-              </button>
-            </div>
-            <span className="rb-search-wrap">
-              <Icon name="search" />
-              <input
-                className="rb-search"
-                aria-label="Search tasks"
-                placeholder="Search tasks…"
-                value={filters.search}
-                onChange={(e) => filter('search', e.target.value)}
-              />
-            </span>
+            <span className="rb-divider" />
             <button
-              aria-label="Toggle filters"
-              aria-expanded={filterOpen}
-              className={filterOpen || filtersActive({ ...filters, search: '' }) ? 'is-active' : ''}
-              onClick={() => setFilterOpen(!filterOpen)}
+              className="rb-view-picker"
+              aria-label="Board view"
+              aria-haspopup="menu"
+              title="Switch view"
+              onClick={(event) =>
+                menu(
+                  event,
+                  views.map((view) => ({
+                    title: view.label,
+                    icon: view.icon,
+                    checked: mode === view.mode,
+                    action: () => {
+                      setMode(view.mode);
+                      if (view.mode === 'documents') setInspector(false);
+                    },
+                  })),
+                )
+              }
             >
-              <Icon name="sliders-horizontal" />
-              Filters
+              <Icon name={views.find((view) => view.mode === mode)!.icon} />
+              {views.find((view) => view.mode === mode)!.label}
+              <Icon name="chevron-down" />
             </button>
           </>
         )}
         <span className="rb-spacer" />
-        <span className={`rb-save rb-save-${state.status.toLowerCase().replace(' ', '-')}`} role="status">
+        <span
+          className={`rb-save rb-save-${state.status.toLowerCase().replace(' ', '-')}`}
+          role="status"
+          title={state.status}
+          aria-label={state.status}
+        >
           <Icon name={saveIcon} />
-          {state.status}
+          <span>{state.status}</span>
         </span>
         {!preview && (
           <>
-            <button
-              aria-label="Activity"
-              title="Changes from other devices"
-              className={`rb-icon-button${activityOpen ? ' is-active' : ''}`}
-              onClick={() => {
-                setActivityOpen(!activityOpen);
-                setSeenActivity(state.activity.length);
-              }}
-            >
-              <Icon name="activity" />
-              {unseen > 0 && <span className="rb-badge-count">{unseen}</span>}
-            </button>
-            <button aria-label="Open source" title="Open source" className="rb-icon-button" onClick={() => asyncAction(host.openSource)}>
-              <Icon name="code-2" />
-            </button>
-            <button aria-label="Export JSON" title="Export JSON" className="rb-icon-button" onClick={() => asyncAction(host.exportJSON)}>
-              <Icon name="download" />
-            </button>
+            {mode !== 'documents' && (
+              <>
+                <button
+                  className={`rb-icon-button${searchOpen || filters.search ? ' is-active' : ''}`}
+                  aria-label="Toggle task search"
+                  title="Search tasks (⌘F / Ctrl+F)"
+                  aria-expanded={searchOpen}
+                  onClick={() => setSearchOpen(!searchOpen)}
+                >
+                  <Icon name="search" />
+                </button>
+                <button
+                  aria-label="Toggle filters"
+                  title="Filters"
+                  aria-expanded={filterOpen}
+                  className={`rb-icon-button${filterOpen || filtersActive({ ...filters, search: '' }) ? ' is-active' : ''}`}
+                  onClick={() => setFilterOpen(!filterOpen)}
+                >
+                  <Icon name="sliders-horizontal" />
+                  {filtersActive({ ...filters, search: '' }) && <span className="rb-active-dot" />}
+                </button>
+              </>
+            )}
             <button
               aria-label="Toggle inspector"
-              title="Inspector"
-              className={`rb-icon-button${inspector ? ' is-active' : ''}`}
+              title="Properties"
+              className={`rb-icon-button rb-properties-button${inspector ? ' is-active' : ''}`}
               onClick={() => setInspector(!inspector)}
             >
               <Icon name="panel-right" />
             </button>
+            <button
+              className="rb-icon-button"
+              aria-label="Board actions"
+              title="Board actions"
+              aria-haspopup="menu"
+              onClick={(event) =>
+                menu(event, [
+                  {
+                    title: 'Undo',
+                    icon: 'undo-2',
+                    disabled: readOnly || !state.canUndo,
+                    action: host.session.undo,
+                  },
+                  {
+                    title: 'Redo',
+                    icon: 'redo-2',
+                    disabled: readOnly || !state.canRedo,
+                    action: host.session.redo,
+                  },
+                  { separator: true },
+                  {
+                    title: `Unplaced tasks (${unplaced.length})`,
+                    icon: 'inbox',
+                    checked: trayOpen,
+                    action: () => setTrayOpen(!trayOpen),
+                  },
+                  {
+                    title: 'Inspector',
+                    icon: 'panel-right',
+                    checked: inspector,
+                    action: () => setInspector(!inspector),
+                  },
+                  {
+                    title: 'Activity',
+                    icon: 'activity',
+                    action: () => {
+                      setActivityOpen(!activityOpen);
+                      setSeenActivity(state.activity.length);
+                    },
+                  },
+                  { separator: true },
+                  { title: 'Open source', icon: 'code-2', action: () => asyncAction(host.openSource) },
+                  { title: 'Export JSON', icon: 'download', action: () => asyncAction(host.exportJSON) },
+                ])
+              }
+            >
+              <Icon name="ellipsis" />
+              {unseen > 0 && <span className="rb-active-dot" />}
+            </button>
+            <button
+              className="rb-primary rb-new-button"
+              disabled={readOnly}
+              aria-label="Add to board"
+              title="Add to board"
+              aria-haspopup="menu"
+              onClick={(event) =>
+                menu(event, [
+                  { title: 'Task', icon: 'circle-plus', action: () => create('task') },
+                  {
+                    title: 'Sticky note',
+                    icon: 'sticky-note',
+                    action: () => create('sticky'),
+                  },
+                  {
+                    title: 'Link document',
+                    icon: 'file-text',
+                    action: () => create('note'),
+                  },
+                  {
+                    title: 'Frame',
+                    icon: 'frame',
+                    action: () => create('frame'),
+                  },
+                ])
+              }
+            >
+              <Icon name="plus" />
+              <span>New</span>
+              <Icon name="chevron-down" />
+            </button>
           </>
         )}
       </header>
+      {!preview && mode !== 'documents' && (searchOpen || filters.search) && (
+        <div className="rb-search-panel">
+          <Icon name="search" />
+          <input
+            autoFocus
+            className="rb-search"
+            aria-label="Search tasks"
+            placeholder="Find a task by title, tag, or description…"
+            value={filters.search}
+            onChange={(event) => filter('search', event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                setSearchOpen(false);
+                filter('search', '');
+                root.current?.focus();
+              }
+            }}
+          />
+          <span className="rb-muted">{matching.size} results</span>
+          <button
+            className="rb-icon-button"
+            aria-label="Close search"
+            onClick={() => {
+              setSearchOpen(false);
+              filter('search', '');
+            }}
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+      )}
       {(state.issue || state.sourceOpen) && (
         <div className="rb-notice" role="alert">
           <span>
-            <Icon name={state.status === 'Conflict' ? 'git-merge' : state.status === 'Error' ? 'octagon-alert' : 'info'} />
+            <Icon
+              name={
+                state.status === 'Conflict'
+                  ? 'git-merge'
+                  : state.status === 'Error'
+                    ? 'octagon-alert'
+                    : 'info'
+              }
+            />
             {state.sourceOpen
               ? 'Source editing is open. Canvas writes are paused until all source editors close or switch to Reading view. '
               : ''}
@@ -944,7 +1374,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               >
                 Save local copy
               </button>
-              <button onClick={() => asyncAction(() => host.session.reload(true))}>Preserve draft & reload</button>
+              <button onClick={() => asyncAction(() => host.session.reload(true))}>
+                Preserve draft & reload
+              </button>
               <button onClick={() => asyncAction(host.openSource)}>Open source</button>
             </div>
           )}
@@ -955,7 +1387,8 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
           <div className="rb-overlaps-head">
             <span>
               <Icon name="git-merge" />
-              {state.overlaps.length} overlapping {state.overlaps.length === 1 ? 'edit was' : 'edits were'} combined automatically. Review or dismiss.
+              {state.overlaps.length} overlapping {state.overlaps.length === 1 ? 'edit was' : 'edits were'}{' '}
+              combined automatically. Review or dismiss.
             </span>
             <button onClick={() => host.session.clearOverlaps()}>Dismiss all</button>
           </div>
@@ -966,7 +1399,10 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 <span className="rb-overlap-actions">
                   <button onClick={() => host.session.resolveOverlap(o, 'keep')}>Keep</button>
                   {o.field !== 'orphan' && (
-                    <button disabled={readOnly} onClick={() => host.session.resolveOverlap(o, o.chosen === 'mine' ? 'theirs' : 'mine')}>
+                    <button
+                      disabled={readOnly}
+                      onClick={() => host.session.resolveOverlap(o, o.chosen === 'mine' ? 'theirs' : 'mine')}
+                    >
                       Use {o.chosen === 'mine' ? 'theirs' : 'mine'}
                     </button>
                   )}
@@ -976,7 +1412,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
           </ul>
         </div>
       )}
-      {!preview && filterOpen && (
+      {!preview && filterOpen && mode !== 'documents' && (
         <div className="rb-filterbar">
           <div className="rb-segment">
             {[
@@ -994,7 +1430,11 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               </button>
             ))}
           </div>
-          <select aria-label="Filter status" value={filters.status} onChange={(e) => filter('status', e.target.value)}>
+          <select
+            aria-label="Filter status"
+            value={filters.status}
+            onChange={(e) => filter('status', e.target.value)}
+          >
             <option value="">All statuses</option>
             {statuses.map((s) => (
               <option key={s} value={s}>
@@ -1002,21 +1442,65 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               </option>
             ))}
           </select>
-          <select aria-label="Filter priority" value={filters.priority} onChange={(e) => filter('priority', e.target.value)}>
+          <select
+            aria-label="Filter priority"
+            value={filters.priority}
+            onChange={(e) => filter('priority', e.target.value)}
+          >
             <option value="">All priorities</option>
             {priorities.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
-          <input aria-label="Filter tag" placeholder="Tag" value={filters.tag} onChange={(e) => filter('tag', e.target.value)} />
-          <select aria-label="Filter due state" value={filters.due} onChange={(e) => filter('due', e.target.value)}>
+          <input
+            aria-label="Filter tag"
+            placeholder="Tag"
+            value={filters.tag}
+            onChange={(e) => filter('tag', e.target.value)}
+          />
+          <select
+            aria-label="Filter assignee"
+            value={filters.unassigned ? 'unassigned' : filters.assignee ? `name:${filters.assignee}` : ''}
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                assignee: e.target.value.startsWith('name:') ? e.target.value.slice(5) : '',
+                unassigned: e.target.value === 'unassigned',
+              }))
+            }
+          >
+            <option value="">Everyone</option>
+            <option value="unassigned">Unassigned</option>
+            {[
+              ...new Set(
+                Object.values(board?.tasks ?? {})
+                  .map((t) => t.assignee)
+                  .filter(Boolean),
+              ),
+            ]
+              .sort()
+              .map((name) => (
+                <option key={name} value={`name:${name}`}>
+                  {name}
+                </option>
+              ))}
+          </select>
+          <select
+            aria-label="Filter due state"
+            value={filters.due}
+            onChange={(e) => filter('due', e.target.value)}
+          >
             <option value="">Any due date</option>
             <option value="today">Today</option>
             <option value="overdue">Overdue</option>
             <option value="upcoming">Upcoming</option>
             <option value="none">No date</option>
           </select>
-          <select aria-label="Filter blocked state" value={filters.blocked} onChange={(e) => filter('blocked', e.target.value)}>
+          <select
+            aria-label="Filter blocked state"
+            value={filters.blocked}
+            onChange={(e) => filter('blocked', e.target.value)}
+          >
             <option value="">Any dependency state</option>
             <option value="blocked">Blocked</option>
             <option value="ready">Ready</option>
@@ -1034,88 +1518,49 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
       )}
       <div className="rb-workspace">
         <main className="rb-main">
-          {!preview && (
-            <div className="rb-createbar">
-              {mode === 'canvas' && (
-                <div className="rb-segment" aria-label="Pointer tool">
-                  <button aria-label="Select mode" title="Select (V)" className={!hand ? 'is-active' : ''} onClick={() => setHand(false)}>
-                    <Icon name="mouse-pointer-2" />
-                    Select
-                  </button>
-                  <button aria-label="Hand mode" title="Hand (H)" className={hand ? 'is-active' : ''} onClick={() => setHand(true)}>
-                    <Icon name="hand" />
-                    Hand
-                  </button>
-                  <button aria-label="Pen tool" title="Draw (P)" className={tool === 'pen' ? 'is-active' : ''} disabled={readOnly} onClick={() => setTool('pen')}>
-                    <Icon name="pen-line" />
-                    Draw
-                  </button>
-                  <button aria-label="Eraser tool" title="Erase (E)" className={tool === 'eraser' ? 'is-active' : ''} disabled={readOnly || !inkCount} onClick={() => setTool('eraser')}>
-                    <Icon name="eraser" />
-                    Erase
-                  </button>
-                </div>
-              )}
-              <button className="rb-primary" disabled={readOnly} title="New task" onClick={() => create('task')}>
-                <Icon name="plus" />
-                Task
-              </button>
-              {mode === 'canvas' && (
-                <>
-                  <button disabled={readOnly} title="New note" onClick={() => create('sticky')}>
-                    <Icon name="sticky-note" />
-                    Note
-                  </button>
-                  <button disabled={readOnly} onClick={() => create('note')}>
-                    <Icon name="link" />
-                    Vault note
-                  </button>
-                  <button disabled={readOnly} title="New frame" onClick={() => create('frame')}>
-                    <Icon name="frame" />
-                    Frame
-                  </button>
-                  <button aria-expanded={connectOpen} className={connectOpen ? 'is-active' : ''} onClick={() => setConnectOpen(!connectOpen)}>
-                    <Icon name="spline" />
-                    Connect
-                  </button>
-                </>
+          {!preview && filtersActive(filters) && (
+            <div className="rb-contextbar">
+              {filtersActive(filters) && mode !== 'documents' && (
+                <button className="rb-filter-summary" onClick={() => setFilters(emptyFilters)}>
+                  <Icon name="x" />
+                  Clear active filters
+                </button>
               )}
               <span className="rb-spacer" />
-              <button
-                className="rb-icon-button"
-                disabled={readOnly || !state.canUndo}
-                aria-label="Undo"
-                title={state.undoLabel ? `Undo ${state.undoLabel.toLowerCase()} (⌘Z)` : 'Undo'}
-                onClick={host.session.undo}
-              >
-                <Icon name="undo-2" />
-              </button>
-              <button
-                className="rb-icon-button"
-                disabled={readOnly || !state.canRedo}
-                aria-label="Redo"
-                title={state.redoLabel ? `Redo ${state.redoLabel.toLowerCase()} (⇧⌘Z)` : 'Redo'}
-                onClick={host.session.redo}
-              >
-                <Icon name="redo-2" />
-              </button>
-              <button className={trayOpen ? 'is-active' : ''} onClick={() => setTrayOpen(!trayOpen)}>
-                <Icon name="inbox" />
-                Unplaced {unplaced.length}
-              </button>
+              {unplaced.length > 0 && (
+                <button className={trayOpen ? 'is-active' : ''} onClick={() => setTrayOpen(!trayOpen)}>
+                  <Icon name="inbox" />
+                  Unplaced {unplaced.length}
+                </button>
+              )}
             </div>
           )}
           {!preview && connectOpen && mode === 'canvas' && (
             <div className="rb-connectbar">
-              <select aria-label="Connection kind" value={connectMode} onChange={(e) => setConnectMode(e.target.value)}>
+              <select
+                aria-label="Connection kind"
+                value={connectMode}
+                onChange={(e) => setConnectMode(e.target.value)}
+              >
                 <option value="relationship">Solid · Relationship</option>
                 <option value="dependency">Dashed · Prerequisite → dependent</option>
               </select>
               {connectMode === 'relationship' && (
-                <input aria-label="New connector label" value={connectLabel} onChange={(e) => setConnectLabel(e.target.value)} />
+                <input
+                  aria-label="New connector label"
+                  value={connectLabel}
+                  onChange={(e) => setConnectLabel(e.target.value)}
+                />
               )}
-              <span>Drag from a card edge to another card, or drop on empty space to create a linked task. Or pick a target:</span>
-              <select aria-label="Connect to card" value={connectTarget} onChange={(e) => setConnectTarget(e.target.value)}>
+              <span>
+                Drag from a card edge to another card, or drop on empty space to create a linked task. Or pick
+                a target:
+              </span>
+              <select
+                aria-label="Connect to card"
+                value={connectTarget}
+                onChange={(e) => setConnectTarget(e.target.value)}
+              >
                 <option value="">Choose target…</option>
                 {board &&
                   Object.entries(board.nodes)
@@ -1168,18 +1613,28 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                       </button>
                     ))}
                   </span>
-                  <span>Draw with the mouse, trackpad, pen or finger. Scroll and pinch still move the canvas. Esc returns to Select.</span>
+                  <span>
+                    Draw with the mouse, trackpad, pen or finger. Scroll and pinch still move the canvas. Esc
+                    returns to Select.
+                  </span>
                 </>
               ) : (
-                <span>Drag over strokes to erase them. One drag is one undo step. Esc returns to Select.</span>
+                <span>
+                  Drag over strokes to erase them. One drag is one undo step. Esc returns to Select.
+                </span>
               )}
               <span className="rb-spacer" />
               <button
                 disabled={readOnly || !inkCount}
                 onClick={() => {
-                  void host.confirm('Clear all ink?', `This removes ${inkCount} stroke${inkCount === 1 ? '' : 's'} from the board. You can undo this action.`).then((ok) => {
-                    if (ok) edit('Clear ink', (b) => clearInk(b));
-                  });
+                  void host
+                    .confirm(
+                      'Clear all ink?',
+                      `This removes ${inkCount} stroke${inkCount === 1 ? '' : 's'} from the board. You can undo this action.`,
+                    )
+                    .then((ok) => {
+                      if (ok) edit('Clear ink', (b) => clearInk(b));
+                    });
                 }}
               >
                 <Icon name="eraser" />
@@ -1221,11 +1676,106 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               className="rb-canvas"
               ref={canvas}
               onDoubleClick={(e) => {
-                if (preview || readOnly || !(e.target as HTMLElement).classList.contains('react-flow__pane')) return;
+                if (preview || readOnly || !(e.target as HTMLElement).classList.contains('react-flow__pane'))
+                  return;
                 const at = flow.screenToFlowPosition({ x: e.clientX, y: e.clientY });
                 createAt('task', { x: at.x - 150, y: at.y - 40 });
               }}
             >
+              {!preview && (
+                <div className="rb-tool-dock" role="toolbar" aria-label="Canvas tools">
+                  {(
+                    [
+                      ['select', 'Select mode', 'Select (V)', 'mouse-pointer-2'],
+                      ['hand', 'Hand mode', 'Hand (H)', 'hand'],
+                      ['pen', 'Pen tool', 'Draw (P)', 'pen-line'],
+                      ['eraser', 'Eraser tool', 'Erase (E)', 'eraser'],
+                    ] as const
+                  ).map(([value, label, title, icon]) => (
+                    <button
+                      key={value}
+                      aria-label={label}
+                      title={title}
+                      aria-pressed={tool === value}
+                      className={tool === value ? 'is-active' : ''}
+                      disabled={
+                        (value === 'pen' || value === 'eraser') &&
+                        (readOnly || (value === 'eraser' && !inkCount))
+                      }
+                      onClick={() => setTool(value)}
+                    >
+                      <Icon name={icon} />
+                      <span className="rb-tool-tip">{title}</span>
+                    </button>
+                  ))}
+                  <span className="rb-divider" />
+                  <button
+                    aria-label="New task"
+                    title="New task"
+                    disabled={readOnly}
+                    onClick={() => create('task')}
+                  >
+                    <Icon name="circle-plus" />
+                    <span className="rb-tool-tip">Task</span>
+                  </button>
+                  <button
+                    aria-label="New note"
+                    title="New sticky note"
+                    disabled={readOnly}
+                    onClick={() => create('sticky')}
+                  >
+                    <Icon name="sticky-note" />
+                    <span className="rb-tool-tip">Sticky note</span>
+                  </button>
+                  <button
+                    aria-label="Vault note"
+                    title="Link a document"
+                    disabled={readOnly}
+                    onClick={() => create('note')}
+                  >
+                    <Icon name="file-text" />
+                    <span className="rb-tool-tip">Document</span>
+                  </button>
+                  <button
+                    aria-label="New frame"
+                    title="New frame"
+                    disabled={readOnly}
+                    onClick={() => create('frame')}
+                  >
+                    <Icon name="frame" />
+                    <span className="rb-tool-tip">Frame</span>
+                  </button>
+                  <button
+                    aria-label="Connect"
+                    title="Connect cards"
+                    aria-expanded={connectOpen}
+                    className={connectOpen ? 'is-active' : ''}
+                    onClick={() => setConnectOpen(!connectOpen)}
+                  >
+                    <Icon name="spline" />
+                    <span className="rb-tool-tip">Connect</span>
+                  </button>
+                  <span className="rb-divider" />
+                  <button
+                    aria-label="Undo"
+                    title={state.undoLabel ? `Undo ${state.undoLabel.toLowerCase()}` : 'Undo'}
+                    disabled={readOnly || !state.canUndo}
+                    onClick={host.session.undo}
+                  >
+                    <Icon name="undo-2" />
+                    <span className="rb-tool-tip">Undo</span>
+                  </button>
+                  <button
+                    aria-label="Redo"
+                    title={state.redoLabel ? `Redo ${state.redoLabel.toLowerCase()}` : 'Redo'}
+                    disabled={readOnly || !state.canRedo}
+                    onClick={host.session.redo}
+                  >
+                    <Icon name="redo-2" />
+                    <span className="rb-tool-tip">Redo</span>
+                  </button>
+                </div>
+              )}
               <ReactFlow<FlowNode>
                 nodes={nodes}
                 edges={edges}
@@ -1241,7 +1791,11 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 onConnect={connect}
                 onConnectEnd={connectEnd}
                 connectionMode={ConnectionMode.Loose}
-                connectionLineStyle={{ stroke: connectMode === 'dependency' ? '#F472B6' : '#8F8F9F', strokeWidth: 1.5, strokeDasharray: connectMode === 'dependency' ? '5 5' : undefined }}
+                connectionLineStyle={{
+                  stroke: connectMode === 'dependency' ? '#F472B6' : '#8F8F9F',
+                  strokeWidth: 1.5,
+                  strokeDasharray: connectMode === 'dependency' ? '5 5' : undefined,
+                }}
                 onNodeClick={() => {
                   if (!preview) {
                     setSelectedTask(undefined);
@@ -1249,8 +1803,15 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                     setInspector(true);
                   }
                 }}
-                onNodeContextMenu={(e, node) => cardMenu(e, selectedIds.includes(node.id) ? selectedIds : [node.id])}
-                onSelectionContextMenu={(e, ns) => cardMenu(e, ns.map((n) => n.id))}
+                onNodeContextMenu={(e, node) =>
+                  cardMenu(e, selectedIds.includes(node.id) ? selectedIds : [node.id])
+                }
+                onSelectionContextMenu={(e, ns) =>
+                  cardMenu(
+                    e,
+                    ns.map((n) => n.id),
+                  )
+                }
                 onPaneContextMenu={paneMenu}
                 onEdgeContextMenu={edgeMenu}
                 onEdgeClick={(_, e) => {
@@ -1294,7 +1855,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               >
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#34343E" />
                 {board && <InkLayer board={board} live={live} pending={pendingErase} />}
-                {prefs.minimap && <MiniMap pannable zoomable nodeColor="#41414F" maskColor="rgba(17,17,19,.75)" />}
+                {prefs.minimap && (
+                  <MiniMap pannable zoomable nodeColor="#41414F" maskColor="rgba(17,17,19,.75)" />
+                )}
               </ReactFlow>
               {drawing && !readOnly && board && (
                 <DrawOverlay
@@ -1320,7 +1883,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                   <p>
                     Double-click anywhere to add a task, or drop a note or frame.
                     <br />
-                    {unplaced.length ? `${unplaced.length} unplaced tasks are waiting in the tray.` : 'Pan freely. Your board grows with you.'}
+                    {unplaced.length
+                      ? `${unplaced.length} unplaced tasks are waiting in the tray.`
+                      : 'Pan freely. Your board grows with you.'}
                   </p>
                   {!preview && (
                     <button disabled={readOnly} className="rb-primary" onClick={() => create('task')}>
@@ -1334,11 +1899,22 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 <div className="rb-selectionbar" role="toolbar" aria-label="Selection actions">
                   <span>{selectedIds.length} selected</span>
                   <span className="rb-swatches rb-swatches-mini">
-                    <button aria-label="No colour" className="rb-swatch rb-swatch-none" disabled={readOnly} onClick={() => colorSelected(undefined)}>
+                    <button
+                      aria-label="No colour"
+                      className="rb-swatch rb-swatch-none"
+                      disabled={readOnly}
+                      onClick={() => colorSelected(undefined)}
+                    >
                       <Icon name="slash" />
                     </button>
                     {colors.map((c) => (
-                      <button key={c} aria-label={`${c} colour`} className={`rb-swatch rb-swatch-${c}`} disabled={readOnly} onClick={() => colorSelected(c)} />
+                      <button
+                        key={c}
+                        aria-label={`${c} colour`}
+                        className={`rb-swatch rb-swatch-${c}`}
+                        disabled={readOnly}
+                        onClick={() => colorSelected(c)}
+                      />
                     ))}
                   </span>
                   <button disabled={readOnly} onClick={duplicateSelected}>
@@ -1350,16 +1926,48 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                       disabled={readOnly}
                       onClick={(e) =>
                         host.showMenu({ x: e.clientX, y: e.clientY }, [
-                          { title: 'Align left', icon: 'align-start-vertical', action: () => edit('Align', (b) => align(b, selectedIds, 'left')) },
-                          { title: 'Align centre', icon: 'align-center-vertical', action: () => edit('Align', (b) => align(b, selectedIds, 'center-x')) },
-                          { title: 'Align right', icon: 'align-end-vertical', action: () => edit('Align', (b) => align(b, selectedIds, 'right')) },
+                          {
+                            title: 'Align left',
+                            icon: 'align-start-vertical',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'left')),
+                          },
+                          {
+                            title: 'Align centre',
+                            icon: 'align-center-vertical',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'center-x')),
+                          },
+                          {
+                            title: 'Align right',
+                            icon: 'align-end-vertical',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'right')),
+                          },
                           { separator: true },
-                          { title: 'Align top', icon: 'align-start-horizontal', action: () => edit('Align', (b) => align(b, selectedIds, 'top')) },
-                          { title: 'Align middle', icon: 'align-center-horizontal', action: () => edit('Align', (b) => align(b, selectedIds, 'center-y')) },
-                          { title: 'Align bottom', icon: 'align-end-horizontal', action: () => edit('Align', (b) => align(b, selectedIds, 'bottom')) },
+                          {
+                            title: 'Align top',
+                            icon: 'align-start-horizontal',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'top')),
+                          },
+                          {
+                            title: 'Align middle',
+                            icon: 'align-center-horizontal',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'center-y')),
+                          },
+                          {
+                            title: 'Align bottom',
+                            icon: 'align-end-horizontal',
+                            action: () => edit('Align', (b) => align(b, selectedIds, 'bottom')),
+                          },
                           { separator: true },
-                          { title: 'Distribute horizontally', icon: 'align-horizontal-space-around', action: () => edit('Distribute', (b) => align(b, selectedIds, 'space-x')) },
-                          { title: 'Distribute vertically', icon: 'align-vertical-space-around', action: () => edit('Distribute', (b) => align(b, selectedIds, 'space-y')) },
+                          {
+                            title: 'Distribute horizontally',
+                            icon: 'align-horizontal-space-around',
+                            action: () => edit('Distribute', (b) => align(b, selectedIds, 'space-x')),
+                          },
+                          {
+                            title: 'Distribute vertically',
+                            icon: 'align-vertical-space-around',
+                            action: () => edit('Distribute', (b) => align(b, selectedIds, 'space-y')),
+                          },
                         ])
                       }
                     >
@@ -1374,13 +1982,25 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 </div>
               )}
               <div className="rb-navigation">
-                <button aria-label="Zoom out" title="Zoom out" onClick={() => void flow.zoomOut({ duration: animate })}>
+                <button
+                  aria-label="Zoom out"
+                  title="Zoom out"
+                  onClick={() => void flow.zoomOut({ duration: animate })}
+                >
                   <Icon name="minus" />
                 </button>
-                <button aria-label="Reset zoom" title="Reset to 100 % (1)" onClick={() => void flow.zoomTo(1, { duration: animate })}>
+                <button
+                  aria-label="Reset zoom"
+                  title="Reset to 100 % (1)"
+                  onClick={() => void flow.zoomTo(1, { duration: animate })}
+                >
                   {Math.round(zoom * 100)}%
                 </button>
-                <button aria-label="Zoom in" title="Zoom in" onClick={() => void flow.zoomIn({ duration: animate })}>
+                <button
+                  aria-label="Zoom in"
+                  title="Zoom in"
+                  onClick={() => void flow.zoomIn({ duration: animate })}
+                >
                   <Icon name="plus" />
                 </button>
                 <button aria-label="Fit all" title="Fit all (⇧1)" onClick={fit}>
@@ -1389,22 +2009,66 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 </button>
                 {!preview && (
                   <>
-                    <button aria-label="Fit selection" title="Fit selection (⇧2)" disabled={!selectedIds.length} onClick={fitSelection}>
+                    <button
+                      aria-label="Fit selection"
+                      title="Fit selection (⇧2)"
+                      disabled={!selectedIds.length}
+                      onClick={fitSelection}
+                    >
                       <Icon name="scan" />
                     </button>
-                    <button aria-label="Snap" title="Snap to grid" className={prefs.snap ? 'is-active' : ''} onClick={() => updatePreference('snap', !prefs.snap)}>
-                      <Icon name="grid-2x2" />
-                    </button>
-                    <button aria-label="Map" title="Minimap" className={prefs.minimap ? 'is-active' : ''} onClick={() => updatePreference('minimap', !prefs.minimap)}>
-                      <Icon name="map" />
-                    </button>
-                    <button aria-label="Input device" title={`Input: ${prefs.input === 'auto' ? `auto (${wheelZooms ? 'mouse' : 'trackpad'})` : prefs.input}`} onClick={inputMenu}>
-                      <Icon name={wheelZooms ? 'mouse' : 'touchpad'} />
+                    <button
+                      aria-label="Canvas options"
+                      title={`Canvas options · ${prefs.input === 'auto' ? `auto (${wheelZooms ? 'mouse' : 'trackpad'})` : prefs.input}`}
+                      onClick={inputMenu}
+                    >
+                      <Icon name="settings-2" />
                     </button>
                   </>
                 )}
               </div>
             </div>
+          ) : mode === 'documents' && board ? (
+            <Documents
+              host={host}
+              board={board}
+              selected={documentPath}
+              select={setDocumentPath}
+              readOnly={readOnly}
+              add={() => {
+                void host.pickNote().then((path) => {
+                  if (!path) return;
+                  const latest = host.session.getSnapshot().board;
+                  if (!latest) return;
+                  const linked =
+                    Object.values(latest.nodes).some((n) => n.type === 'note' && n.notePath === path) ||
+                    Object.values(latest.tasks).some((t) => t.notePath === path);
+                  if (!linked) {
+                    const bottom = Object.values(latest.nodes).reduce(
+                      (y, node) => Math.max(y, node.y + node.height),
+                      0,
+                    );
+                    createAt('note', { x: 100, y: bottom + 80 }, { path });
+                  }
+                  previewNote(path);
+                });
+              }}
+            />
+          ) : (mode === 'day' || mode === 'calendar') && board ? (
+            <Planner
+              host={host}
+              board={board}
+              matching={matching}
+              today={today}
+              date={plannerDate || today}
+              setDate={(date) => setPlannerDate(date === today ? '' : date)}
+              view={mode}
+              readOnly={readOnly}
+              activeTask={taskId}
+              edit={edit}
+              select={selectTask}
+              complete={complete}
+            />
           ) : mode === 'kanban' && board ? (
             <Kanban
               host={host}
@@ -1423,7 +2087,11 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 <strong>{matching.size} tasks</strong>
                 <label className="rb-inline-label">
                   Sort
-                  <select aria-label="Sort tasks" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+                  <select
+                    aria-label="Sort tasks"
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as typeof sort)}
+                  >
                     <option value="created">Board order</option>
                     <option value="status">Status</option>
                     <option value="priority">Priority</option>
@@ -1434,7 +2102,10 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               </div>
               {board &&
                 listTasks.map(([id, t]) => (
-                  <div className={`rb-list-row${id === taskId ? ' is-active' : ''}${t.status === 'done' ? ' rb-done' : ''}`} key={id}>
+                  <div
+                    className={`rb-list-row${id === taskId ? ' is-active' : ''}${t.status === 'done' ? ' rb-done' : ''}`}
+                    key={id}
+                  >
                     <button
                       className="rb-complete"
                       disabled={readOnly}
@@ -1446,6 +2117,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                     <button className="rb-list-title" onClick={() => selectTask(id)}>
                       <strong>{t.title}</strong>
                       <small>
+                        {t.assignee ? `${t.assignee} · ` : ''}
                         {t.tags.map((tag) => `#${tag}`).join(' ')}
                         {blocked(t, board) && t.status !== 'done' ? ' · Blocked' : ''}
                       </small>
@@ -1480,7 +2152,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                     )}
                   </div>
                 ))}
-              {matching.size === 0 && <p className="rb-muted">No matching tasks. Clear filters or create a task.</p>}
+              {matching.size === 0 && (
+                <p className="rb-muted">No matching tasks. Clear filters or create a task.</p>
+              )}
             </div>
           )}
           <footer className="rb-footer">
@@ -1495,7 +2169,11 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                     : `Drag to select · Space+drag or ${wheelZooms ? 'middle-drag' : 'two fingers'} to pan · Right-click for menus`
                 : mode === 'kanban'
                   ? 'Drag cards between columns to change status. Canvas positions are kept.'
-                  : 'Task records stay linked to their canvas cards.'}
+                  : mode === 'documents'
+                    ? 'Live previews of your linked Markdown notes. Edit originals in Obsidian.'
+                    : mode === 'day' || mode === 'calendar'
+                      ? 'Plan, complete, or reschedule tasks. Canvas positions are kept.'
+                      : 'Task records stay linked to their canvas cards.'}
             </span>
             <span>{selectedIds.length ? `${selectedIds.length} selected` : 'Local-first · No account'}</span>
           </footer>
@@ -1507,21 +2185,28 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                 <Icon name="activity" />
                 Activity
               </span>
-              <button aria-label="Close activity" className="rb-icon-button" onClick={() => setActivityOpen(false)}>
+              <button
+                aria-label="Close activity"
+                className="rb-icon-button"
+                onClick={() => setActivityOpen(false)}
+              >
                 <Icon name="x" />
               </button>
             </div>
             <div className="rb-inspector-body">
               {state.activity.length === 0 && (
                 <p className="rb-muted">
-                  Changes that arrive from other devices or from the source note will appear here while this board is open.
+                  Changes that arrive from other devices or from the source note will appear here while this
+                  board is open.
                 </p>
               )}
               {state.activity.map((entry) => (
                 <div className="rb-activity-entry" key={entry.at}>
                   <div className="rb-activity-head">
                     <strong>{entry.by ?? 'Another device or editor'}</strong>
-                    <span>{new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span>
+                      {new Date(entry.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
                   <ul>
                     {entry.changes.slice(0, 12).map((c, i) => (
@@ -1534,7 +2219,9 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                         )}
                       </li>
                     ))}
-                    {entry.changes.length > 12 && <li className="rb-muted">…and {entry.changes.length - 12} more</li>}
+                    {entry.changes.length > 12 && (
+                      <li className="rb-muted">…and {entry.changes.length - 12} more</li>
+                    )}
                   </ul>
                 </div>
               ))}
@@ -1551,13 +2238,18 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                   <Icon name="git-branch" />
                   Dependency
                 </span>
-                <button aria-label="Close inspector" className="rb-icon-button" onClick={() => setInspector(false)}>
+                <button
+                  aria-label="Close inspector"
+                  className="rb-icon-button"
+                  onClick={() => setInspector(false)}
+                >
                   <Icon name="x" />
                 </button>
               </div>
               <div className="rb-inspector-body">
                 <p className="rb-muted">
-                  Dashed arrow: prerequisite → dependent. Stored only in the dependent task’s <code>dependsOn</code>.
+                  Dashed arrow: prerequisite → dependent. Stored only in the dependent task’s{' '}
+                  <code>dependsOn</code>.
                 </p>
                 <button disabled={readOnly} onClick={remove}>
                   <Icon name="unlink" />
@@ -1582,6 +2274,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               }}
               edit={edit}
               complete={complete}
+              previewNote={previewNote}
             />
           ))}
       </div>

@@ -1,0 +1,30 @@
+name: Bug report
+description: Report a problem with Roseboard 1.4.0.
+title: "[Bug]: "
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and device
+      description: Roseboard version, Obsidian version, operating system, and desktop or mobile.
+      placeholder: Roseboard 1.4.0, Obsidian ..., macOS ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you click or type before the problem appeared?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Screenshots or a small example
+      description: Optional. Remove private notes, paths and credentials. Do not upload your entire vault or plugin settings.

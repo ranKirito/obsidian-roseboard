@@ -1,6 +1,6 @@
 {
   "name": "roseboard",
-  "version": "1.2.1",
+  "version": "1.4.0",
   "private": true,
   "description": "A local-first task canvas for Obsidian",
   "license": "MIT",
@@ -15,7 +15,8 @@
     "test:obsidian": "node scripts/test-obsidian.mjs",
     "package": "npm run build && node scripts/package.mjs",
     "format": "prettier --write src tests scripts esbuild.config.mjs",
-    "test:vault": "node scripts/launch-test-vault.mjs"
+    "test:vault": "node scripts/launch-test-vault.mjs",
+    "test:planner": "node scripts/test-planner-obsidian.mjs"
   },
   "dependencies": {
     "@xyflow/react": "12.11.6",
@@ -23,6 +24,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {

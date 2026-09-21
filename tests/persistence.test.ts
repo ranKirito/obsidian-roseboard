@@ -5,6 +5,12 @@ import { tmpdir } from 'node:os';
 import { BoardSession, type Storage, type RecoveryDraft } from '../src/persistence/session';
 import { newBoard, newTask, type Board } from '../src/domain/model';
 import { boardNote, parseNote, replaceBlock } from '../src/persistence/markdown';
+import {
+  NoteSession,
+  assertEditableNote,
+  type NoteDraft,
+  type NoteStorage,
+} from '../src/persistence/note-session';
 let dir: string,
   storage: Storage,
   source = false,
@@ -154,7 +160,10 @@ describe('persistence against temporary Markdown files', () => {
     });
     await s.flush();
     const saved = parseNote(await disk()).board;
-    expect(saved.tasks.a).toMatchObject({ updatedAt: '2026-09-18T09:00:00.000Z', updatedBy: 'Anna · Laptop' });
+    expect(saved.tasks.a).toMatchObject({
+      updatedAt: '2026-09-18T09:00:00.000Z',
+      updatedBy: 'Anna · Laptop',
+    });
     expect(saved.tasks.b!.updatedAt).toBeUndefined();
   });
   it('reloads external edits without changing stable IDs or coordinates and keeps local undo usable', async () => {
@@ -232,7 +241,13 @@ describe('persistence against temporary Markdown files', () => {
     expect(s.getSnapshot().status).toBe('Saved locally');
     expect(parseNote(await disk()).board.title).toBe('Local');
     const overlap = s.getSnapshot().overlaps[0]!;
-    expect(overlap).toMatchObject({ kind: 'board', field: 'title', mine: 'Local', theirs: 'External', chosen: 'mine' });
+    expect(overlap).toMatchObject({
+      kind: 'board',
+      field: 'title',
+      mine: 'Local',
+      theirs: 'External',
+      chosen: 'mine',
+    });
     s.resolveOverlap(overlap, 'theirs');
     expect(s.getSnapshot().overlaps).toEqual([]);
     expect(s.getSnapshot().board!.title).toBe('External');
@@ -514,5 +529,114 @@ describe('persistence against temporary Markdown files', () => {
     await s.flush();
     expect(parseNote(await disk()).board.tasks.b!.title).toBe('Second');
     expect(parseNote(await disk()).board.tasks.c!.title).toBe('Remote');
+  });
+});
+
+describe('inline document editing', () => {
+  function notes(initial = '---\ntags: [project]\n---\n# Original\n') {
+    let text = initial,
+      draft: NoteDraft | undefined,
+      sourceOpen = false;
+    const storage: NoteStorage = {
+      read: async () => text,
+      process: async (_path, transform) => {
+        text = transform(text);
+        return text;
+      },
+      sourceOpen: () => sourceOpen,
+      loadDraft: async () => draft,
+      draft: async (_path, next) => {
+        draft = next ?? undefined;
+      },
+      copy: async () => 'Copy.md',
+    };
+    return {
+      storage,
+      text: () => text,
+      draft: () => draft,
+      external: (next: string) => {
+        text = next;
+      },
+      source: () => {
+        sourceOpen = true;
+      },
+    };
+  }
+  it('saves the full Markdown, including properties, without touching board data', async () => {
+    const vault = notes();
+    const session = await NoteSession.open('Note.md', vault.storage);
+    const next = session.getSnapshot().text + '\nNew paragraph.\n';
+    session.change(next);
+    await session.stash();
+    expect(vault.text()).not.toContain('New paragraph');
+    expect(vault.draft()?.text).toBe(next);
+    expect(await session.save()).toBe(true);
+    expect(vault.text()).toBe(next);
+    expect(vault.draft()).toBeUndefined();
+  });
+  it('refuses concurrent edits and restores the unsaved draft after reopening', async () => {
+    const vault = notes();
+    const session = await NoteSession.open('Note.md', vault.storage);
+    session.change('# My draft\n');
+    vault.external('# Collaborator\n');
+    expect(await session.save()).toBe(false);
+    expect(vault.text()).toBe('# Collaborator\n');
+    const reopened = await NoteSession.open('Note.md', vault.storage);
+    expect(reopened.getSnapshot().text).toBe('# My draft\n');
+    expect(reopened.getSnapshot().recovered).toBe(true);
+    expect(await reopened.saveCopy()).toBe('Copy.md');
+    await reopened.discard();
+    expect(vault.draft()).toBeUndefined();
+    expect(vault.text()).toBe('# Collaborator\n');
+  });
+  it('refuses a source editor opened after editing starts', async () => {
+    const vault = notes();
+    const session = await NoteSession.open('Note.md', vault.storage);
+    session.change('Draft');
+    const process = vault.storage.process;
+    vault.storage.process = async (path, transform) => {
+      await Promise.resolve();
+      vault.source();
+      return process(path, transform);
+    };
+    expect(await session.save()).toBe(false);
+    expect(vault.text()).toContain('# Original');
+    expect(vault.draft()?.text).toBe('Draft');
+  });
+  it('never replaces board notes or saves truncated previews', async () => {
+    expect(() => assertEditableNote('```roseboard\n{}\n```')).toThrow('Roseboard');
+    expect(() => assertEditableNote('x'.repeat(100001))).toThrow('too large');
+    const vault = notes();
+    const session = await NoteSession.open('Note.md', vault.storage);
+    session.change('~~~roseboard\n{}\n~~~');
+    expect(await session.save()).toBe(false);
+    expect(vault.text()).toContain('# Original');
+    await session.discard();
+  });
+  it('retains edits when the underlying file cannot be written', async () => {
+    const vault = notes();
+    vault.storage.process = async () => {
+      throw new Error('Note missing: Note.md');
+    };
+    const session = await NoteSession.open('Note.md', vault.storage);
+    session.change('# Draft after deletion');
+    expect(await session.save()).toBe(false);
+    expect(vault.draft()?.text).toBe('# Draft after deletion');
+  });
+  it('serializes recovery writes so an older draft cannot reappear after save', async () => {
+    const vault = notes();
+    const writes: (NoteDraft | null)[] = [];
+    vault.storage.draft = async (_path, draft) => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      writes.push(draft);
+    };
+    const session = await NoteSession.open('Note.md', vault.storage);
+    session.change('First');
+    void session.stash();
+    session.change('Second');
+    void session.stash();
+    await session.save();
+    expect(vault.text()).toBe('Second');
+    expect(writes.at(-1)).toBeNull();
   });
 });

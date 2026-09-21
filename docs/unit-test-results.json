@@ -1,1 +1,1277 @@
-{"numTotalTestSuites":15,"numPassedTestSuites":15,"numFailedTestSuites":0,"numPendingTestSuites":0,"numTotalTests":73,"numPassedTests":73,"numFailedTests":0,"numPendingTests":0,"numTodoTests":0,"snapshot":{"added":0,"failure":false,"filesAdded":0,"filesRemoved":0,"filesRemovedList":[],"filesUnmatched":0,"filesUpdated":0,"matched":0,"total":0,"unchecked":0,"uncheckedKeysByFile":[],"unmatched":0,"updated":0,"didUpdate":false},"startTime":1789742131998,"success":true,"testResults":[{"assertionResults":[{"ancestorTitles":["release artifacts and visual isolation"],"fullName":"release artifacts and visual isolation normal text, chips and action text meet 4.5:1 contrast on their surfaces","status":"passed","title":"normal text, chips and action text meet 4.5:1 contrast on their surfaces","duration":1.159000000000006,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["release artifacts and visual isolation"],"fullName":"release artifacts and visual isolation every emitted CSS rule and animation name is scoped","status":"passed","title":"every emitted CSS rule and animation name is scoped","duration":13.556958000000009,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["release artifacts and visual isolation"],"fullName":"release artifacts and visual isolation ships an installable manifest and local browser bundle","status":"passed","title":"ships an installable manifest and local browser bundle","duration":8.566749999999985,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["release artifacts and visual isolation"],"fullName":"release artifacts and visual isolation publishes the JSON Schema with the v1.1 optional fields","status":"passed","title":"publishes the JSON Schema with the v1.1 optional fields","duration":1.085833000000008,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1789742132146,"endTime":1789742132170.086,"status":"passed","message":"","name":"./tests/artifacts.test.ts"},{"assertionResults":[{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips documents defaults while retaining IDs and extensions at every level","status":"passed","title":"documents defaults while retaining IDs and extensions at every level","duration":21.70712499999999,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips rejects unsupported versions without converting","status":"passed","title":"rejects unsupported versions without converting","duration":1.8079170000000033,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips rejects invalid shapes, positions and missing references","status":"passed","title":"rejects invalid shapes, positions and missing references","duration":2.0934579999999983,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips rejects duplicate placements and checklist IDs","status":"passed","title":"rejects duplicate placements and checklist IDs","duration":1.4316249999999968,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips preserves all surrounding bytes, CRLF and long fences","status":"passed","title":"preserves all surrounding bytes, CRLF and long fences","duration":0.5667919999999924,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips ignores roseboard fences nested inside other fences","status":"passed","title":"ignores roseboard fences nested inside other fences","duration":0.4543340000000171,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips rejects zero, multiple and unfinished blocks and partial JSON","status":"passed","title":"rejects zero, multiple and unfinished blocks and partial JSON","duration":0.6654169999999908,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["schema and safe round trips"],"fullName":"schema and safe round trips blocks non-vault paths and permits spaces/unicode","status":"passed","title":"blocks non-vault paths and permits spaces/unicode","duration":0.36929100000000403,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters rejects missing, self and cyclic prerequisites","status":"passed","title":"rejects missing, self and cyclic prerequisites","duration":1.1080829999999935,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters derives blockage and keeps relationships independent","status":"passed","title":"derives blockage and keeps relationships independent","duration":1.81412499999999,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters validates real calendar days, including leap years","status":"passed","title":"validates real calendar days, including leap years","duration":1.2672090000000082,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters uses the board calendar day on both sides of UTC and DST","status":"passed","title":"uses the board calendar day on both sides of UTC and DST","duration":0.5798329999999794,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters keeps Today separate from Overdue and excludes done from overdue/ready","status":"passed","title":"keeps Today separate from Overdue and excludes done from overdue/ready","duration":0.7957920000000058,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["task graph, dates and filters"],"fullName":"task graph, dates and filters searches descriptions and tags without moving cards","status":"passed","title":"searches descriptions and tags without moving cards","duration":0.4387920000000065,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo removing a card preserves its task and dependencies","status":"passed","title":"removing a card preserves its task and dependencies","duration":0.4519170000000088,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo deleting a task removes placements and incoming dependencies and is undoable","status":"passed","title":"deleting a task removes placements and incoming dependencies and is undoable","duration":0.7427089999999907,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo duplicates with independent task/node/checklist IDs and extension fields","status":"passed","title":"duplicates with independent task/node/checklist IDs and extension fields","duration":1.1902499999999918,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo moves frame members once even with mixed selection and ungroups on frame delete","status":"passed","title":"moves frame members once even with mixed selection and ungroups on frame delete","duration":3.07216600000001,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo rejects nested frames","status":"passed","title":"rejects nested frames","duration":0.35454099999998334,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo places unplaced tasks in a new area without moving existing cards","status":"passed","title":"places unplaced tasks in a new area without moving existing cards","duration":0.3712910000000136,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo undo/redo groups text changes but one completed move is one command","status":"passed","title":"undo/redo groups text changes but one completed move is one command","duration":0.27891700000000696,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["commands and undo"],"fullName":"commands and undo does not commit a rejected command","status":"passed","title":"does not commit a rejected command","duration":0.25670800000000327,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1789742132199,"endTime":1789742132241.3713,"status":"passed","message":"","name":"./tests/domain.test.ts"},{"assertionResults":[{"ancestorTitles":["ink schema and storage"],"fullName":"ink schema and storage validates strokes with defaults and rejects malformed point lists","status":"passed","title":"validates strokes with defaults and rejects malformed point lists","duration":25.018124999999998,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink schema and storage"],"fullName":"ink schema and storage keeps ink through Markdown round trips, sorts stroke keys, and omits an empty map","status":"passed","title":"keeps ink through Markdown round trips, sorts stroke keys, and omits an empty map","duration":1.193792000000002,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink schema and storage"],"fullName":"ink schema and storage is an unknown extension to a reader that ignores it, and survives that reader","status":"passed","title":"is an unknown extension to a reader that ignores it, and survives that reader","duration":1.453374999999994,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink geometry"],"fullName":"ink geometry measures distance to segments and stroke bounds","status":"passed","title":"measures distance to segments and stroke bounds","duration":0.19329199999998536,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink geometry"],"fullName":"ink geometry simplifies collinear noise but keeps corners","status":"passed","title":"simplifies collinear noise but keeps corners","duration":0.2000409999999988,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink geometry"],"fullName":"ink geometry builds smoothed SVG paths and hit-tests the stroke body","status":"passed","title":"builds smoothed SVG paths and hit-tests the stroke body","duration":0.17979199999999196,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink commands, undo and merge"],"fullName":"ink commands, undo and merge adds, erases and clears strokes as undoable edits with stamps","status":"passed","title":"adds, erases and clears strokes as undoable edits with stamps","duration":1.4658330000000035,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["ink commands, undo and merge"],"fullName":"ink commands, undo and merge merges strokes drawn on two devices and honours erasures","status":"passed","title":"merges strokes drawn on two devices and honours erasures","duration":1.116624999999999,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1789742132202,"endTime":1789742132233.1167,"status":"passed","message":"","name":"./tests/ink.test.ts"},{"assertionResults":[{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits combines edits to different records without overlaps","status":"passed","title":"combines edits to different records without overlaps","duration":23.070625000000007,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits keeps both sides when the same card moves on both devices and reports the overlap","status":"passed","title":"keeps both sides when the same card moves on both devices and reports the overlap","duration":1.052500000000009,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits lets the more recent stamp win when both sides changed one field","status":"passed","title":"lets the more recent stamp win when both sides changed one field","duration":1.0040410000000008,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits keeps additions from both sides and removals that nobody edited","status":"passed","title":"keeps additions from both sides and removals that nobody edited","duration":0.5017500000000155,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits prefers keeping a record that one side edited while the other removed it","status":"passed","title":"prefers keeping a record that one side edited while the other removed it","duration":1.1016250000000127,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits repairs a prerequisite on a task the other side deleted","status":"passed","title":"repairs a prerequisite on a task the other side deleted","duration":1.0883340000000032,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits merges tags and prerequisites as sets and checklists by item ID","status":"passed","title":"merges tags and prerequisites as sets and checklists by item ID","duration":0.5280410000000018,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits resolves both devices placing the same task by keeping the already synced card","status":"passed","title":"resolves both devices placing the same task by keeping the already synced card","duration":0.8318340000000148,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits refuses a combination that would create a dependency cycle","status":"passed","title":"refuses a combination that would create a dependency cycle","duration":1.0764580000000024,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits preserves unknown extension fields and board-level edits","status":"passed","title":"preserves unknown extension fields and board-level edits","duration":0.5261670000000152,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["three-way merge of concurrent board edits"],"fullName":"three-way merge of concurrent board edits diff lists additions, removals and grouped field changes","status":"passed","title":"diff lists additions, removals and grouped field changes","duration":1.1976250000000164,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["stamps, canonical serialization and history rebasing"],"fullName":"stamps, canonical serialization and history rebasing stamps only the records an edit changed","status":"passed","title":"stamps only the records an edit changed","duration":1.8667499999999961,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["stamps, canonical serialization and history rebasing"],"fullName":"stamps, canonical serialization and history rebasing serializes records in a stable key order and round-trips exactly","status":"passed","title":"serializes records in a stable key order and round-trips exactly","duration":0.9372500000000059,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["stamps, canonical serialization and history rebasing"],"fullName":"stamps, canonical serialization and history rebasing rebases undo history across merged remote changes and drops what cannot be rebased","status":"passed","title":"rebases undo history across merged remote changes and drops what cannot be rebased","duration":1.1501250000000027,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["stamps, canonical serialization and history rebasing"],"fullName":"stamps, canonical serialization and history rebasing adds whole days to date-only deadlines without UTC drift","status":"passed","title":"adds whole days to date-only deadlines without UTC drift","duration":0.16179199999999128,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["stamps, canonical serialization and history rebasing"],"fullName":"stamps, canonical serialization and history rebasing rejects a self-dependency through setDependency at validation","status":"passed","title":"rejects a self-dependency through setDependency at validation","duration":0.5874589999999955,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1789742132199,"endTime":1789742132236.5874,"status":"passed","message":"","name":"./tests/merge.test.ts"},{"assertionResults":[{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files create/edit/move/reopen preserves records and surrounding Markdown","status":"passed","title":"create/edit/move/reopen preserves records and surrounding Markdown","duration":29.470999999999975,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files does not write for subscription/view changes or camera state","status":"passed","title":"does not write for subscription/view changes or camera state","duration":3.7066250000000025,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files debounces text edits and serializes concurrent flush requests","status":"passed","title":"debounces text edits and serializes concurrent flush requests","duration":6.015832999999986,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files writes one recovery draft per burst, and none when the save lands first","status":"passed","title":"writes one recovery draft per burst, and none when the save lands first","duration":958.197375,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files stamps changed records with the storage stamp when one is configured","status":"passed","title":"stamps changed records with the storage stamp when one is configured","duration":12.23350000000005,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files reloads external edits without changing stable IDs or coordinates and keeps local undo usable","status":"passed","title":"reloads external edits without changing stable IDs or coordinates and keeps local undo usable","duration":3.760624999999891,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files merges a concurrent external edit to another record instead of conflicting","status":"passed","title":"merges a concurrent external edit to another record instead of conflicting","duration":3.441665999999941,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files merges at commit time when the file changed under a pending save","status":"passed","title":"merges at commit time when the file changed under a pending save","duration":2.66599999999994,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files reports same-field overlaps, keeps local work, and can take the other side","status":"passed","title":"reports same-field overlaps, keeps local work, and can take the other side","duration":2.747917000000143,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files falls back to an explicit conflict when changes cannot be combined","status":"passed","title":"falls back to an explicit conflict when changes cannot be combined","duration":3.9400829999999587,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files invalid JSON retains display and blocks autosave","status":"passed","title":"invalid JSON retains display and blocks autosave","duration":1.528915999999981,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files unsupported schema opens read-only without an empty replacement","status":"passed","title":"unsupported schema opens read-only without an empty replacement","duration":0.9242919999999231,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files preserves local work before reload and never discards if preservation fails","status":"passed","title":"preserves local work before reload and never discards if preservation fails","duration":1.6170420000000831,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files preserves concurrent changes to prose outside the block","status":"passed","title":"preserves concurrent changes to prose outside the block","duration":1.2827079999999569,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files source editor suspension blocks new edits and pauses pending writes until revalidated","status":"passed","title":"source editor suspension blocks new edits and pauses pending writes until revalidated","duration":2.0907909999998537,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files source edits made during suspension are combined with local work after the editor closes","status":"passed","title":"source edits made during suspension are combined with local work after the editor closes","duration":3.096125000000029,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files source editor opening inside process cannot be overwritten","status":"passed","title":"source editor opening inside process cannot be overwritten","duration":0.9524169999999685,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files suppresses self reloads by payload identity and observes the next real change","status":"passed","title":"suppresses self reloads by payload identity and observes the next real change","duration":1.7442499999999654,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files recovery draft on restart is combined with newer source, or conflicts if it cannot be","status":"passed","title":"recovery draft on restart is combined with newer source, or conflicts if it cannot be","duration":2.8810409999998683,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files two subscribers observe one canonical model and shared undo","status":"passed","title":"two subscribers observe one canonical model and shared undo","duration":1.2058750000001055,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files deletion preserves recoverable local copy","status":"passed","title":"deletion preserves recoverable local copy","duration":1.021792000000005,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files tracks edits made while an earlier write is in flight","status":"passed","title":"tracks edits made while an earlier write is in flight","duration":12.898458000000119,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]},{"ancestorTitles":["persistence against temporary Markdown files"],"fullName":"persistence against temporary Markdown files keeps edits made during a merging write on top of the merged result","status":"passed","title":"keeps edits made during a merging write on top of the merged result","duration":14.341417000000092,"failureMessages":[],"meta":{},"tags":[],"benchmarks":[]}],"startTime":1789742132199,"endTime":1789742133271.3413,"status":"passed","message":"","name":"./tests/persistence.test.ts"}]}
+{
+  "numTotalTestSuites": 21,
+  "numPassedTestSuites": 21,
+  "numFailedTestSuites": 0,
+  "numPendingTestSuites": 0,
+  "numTotalTests": 91,
+  "numPassedTests": 91,
+  "numFailedTests": 0,
+  "numPendingTests": 0,
+  "numTodoTests": 0,
+  "snapshot": {
+    "added": 0,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0,
+    "didUpdate": false
+  },
+  "startTime": 1789926962762,
+  "success": true,
+  "testResults": [
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "release artifacts and visual isolation"
+          ],
+          "fullName": "release artifacts and visual isolation normal text, chips and action text meet 4.5:1 contrast on their surfaces",
+          "status": "passed",
+          "title": "normal text, chips and action text meet 4.5:1 contrast on their surfaces",
+          "duration": 1.1620000000000061,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "release artifacts and visual isolation"
+          ],
+          "fullName": "release artifacts and visual isolation every emitted CSS rule and animation name is scoped",
+          "status": "passed",
+          "title": "every emitted CSS rule and animation name is scoped",
+          "duration": 19.757916999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "release artifacts and visual isolation"
+          ],
+          "fullName": "release artifacts and visual isolation ships an installable manifest and local browser bundle",
+          "status": "passed",
+          "title": "ships an installable manifest and local browser bundle",
+          "duration": 5.8654169999999795,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "release artifacts and visual isolation"
+          ],
+          "fullName": "release artifacts and visual isolation publishes the JSON Schema with backward-compatible optional fields",
+          "status": "passed",
+          "title": "publishes the JSON Schema with backward-compatible optional fields",
+          "duration": 0.8159170000000131,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926962976,
+      "endTime": 1789926963003.816,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/artifacts.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips documents defaults while retaining IDs and extensions at every level",
+          "status": "passed",
+          "title": "documents defaults while retaining IDs and extensions at every level",
+          "duration": 16.26520800000003,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips rejects unsupported versions without converting",
+          "status": "passed",
+          "title": "rejects unsupported versions without converting",
+          "duration": 2.0565839999999866,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips rejects invalid shapes, positions and missing references",
+          "status": "passed",
+          "title": "rejects invalid shapes, positions and missing references",
+          "duration": 3.4586669999999913,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips rejects duplicate placements and checklist IDs",
+          "status": "passed",
+          "title": "rejects duplicate placements and checklist IDs",
+          "duration": 0.49158299999999144,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips preserves all surrounding bytes, CRLF and long fences",
+          "status": "passed",
+          "title": "preserves all surrounding bytes, CRLF and long fences",
+          "duration": 0.39045800000002373,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips ignores roseboard fences nested inside other fences",
+          "status": "passed",
+          "title": "ignores roseboard fences nested inside other fences",
+          "duration": 0.37187499999998863,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips rejects zero, multiple and unfinished blocks and partial JSON",
+          "status": "passed",
+          "title": "rejects zero, multiple and unfinished blocks and partial JSON",
+          "duration": 0.42466699999999946,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "schema and safe round trips"
+          ],
+          "fullName": "schema and safe round trips blocks non-vault paths and permits spaces/unicode",
+          "status": "passed",
+          "title": "blocks non-vault paths and permits spaces/unicode",
+          "duration": 0.26587500000005093,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters rejects missing, self and cyclic prerequisites",
+          "status": "passed",
+          "title": "rejects missing, self and cyclic prerequisites",
+          "duration": 0.7340409999999906,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters derives blockage and keeps relationships independent",
+          "status": "passed",
+          "title": "derives blockage and keeps relationships independent",
+          "duration": 1.0754999999999768,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters validates real calendar days, including leap years",
+          "status": "passed",
+          "title": "validates real calendar days, including leap years",
+          "duration": 0.8682919999999967,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters uses the board calendar day on both sides of UTC and DST",
+          "status": "passed",
+          "title": "uses the board calendar day on both sides of UTC and DST",
+          "duration": 0.6667079999999714,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters keeps Today separate from Overdue and excludes done from overdue/ready",
+          "status": "passed",
+          "title": "keeps Today separate from Overdue and excludes done from overdue/ready",
+          "duration": 0.30179099999998016,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "task graph, dates and filters"
+          ],
+          "fullName": "task graph, dates and filters searches descriptions and tags without moving cards",
+          "status": "passed",
+          "title": "searches descriptions and tags without moving cards",
+          "duration": 0.220833999999968,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo removing a card preserves its task and dependencies",
+          "status": "passed",
+          "title": "removing a card preserves its task and dependencies",
+          "duration": 0.42291700000004084,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo deleting a task removes placements and incoming dependencies and is undoable",
+          "status": "passed",
+          "title": "deleting a task removes placements and incoming dependencies and is undoable",
+          "duration": 0.4819170000000099,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo duplicates with independent task/node/checklist IDs and extension fields",
+          "status": "passed",
+          "title": "duplicates with independent task/node/checklist IDs and extension fields",
+          "duration": 0.5897499999999809,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo moves frame members once even with mixed selection and ungroups on frame delete",
+          "status": "passed",
+          "title": "moves frame members once even with mixed selection and ungroups on frame delete",
+          "duration": 1.8712909999999852,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo rejects nested frames",
+          "status": "passed",
+          "title": "rejects nested frames",
+          "duration": 0.3269999999999982,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo places unplaced tasks in a new area without moving existing cards",
+          "status": "passed",
+          "title": "places unplaced tasks in a new area without moving existing cards",
+          "duration": 1.191082999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo undo/redo groups text changes but one completed move is one command",
+          "status": "passed",
+          "title": "undo/redo groups text changes but one completed move is one command",
+          "duration": 0.532792000000029,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "commands and undo"
+          ],
+          "fullName": "commands and undo does not commit a rejected command",
+          "status": "passed",
+          "title": "does not commit a rejected command",
+          "duration": 0.6687499999999886,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963030,
+      "endTime": 1789926963064.6687,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/domain.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "ink schema and storage"
+          ],
+          "fullName": "ink schema and storage validates strokes with defaults and rejects malformed point lists",
+          "status": "passed",
+          "title": "validates strokes with defaults and rejects malformed point lists",
+          "duration": 18.24416599999998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink schema and storage"
+          ],
+          "fullName": "ink schema and storage keeps ink through Markdown round trips, sorts stroke keys, and omits an empty map",
+          "status": "passed",
+          "title": "keeps ink through Markdown round trips, sorts stroke keys, and omits an empty map",
+          "duration": 1.1178750000000264,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink schema and storage"
+          ],
+          "fullName": "ink schema and storage is an unknown extension to a reader that ignores it, and survives that reader",
+          "status": "passed",
+          "title": "is an unknown extension to a reader that ignores it, and survives that reader",
+          "duration": 1.7351249999999823,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink geometry"
+          ],
+          "fullName": "ink geometry measures distance to segments and stroke bounds",
+          "status": "passed",
+          "title": "measures distance to segments and stroke bounds",
+          "duration": 0.1932909999999879,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink geometry"
+          ],
+          "fullName": "ink geometry simplifies collinear noise but keeps corners",
+          "status": "passed",
+          "title": "simplifies collinear noise but keeps corners",
+          "duration": 0.20962499999995998,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink geometry"
+          ],
+          "fullName": "ink geometry builds smoothed SVG paths and hit-tests the stroke body",
+          "status": "passed",
+          "title": "builds smoothed SVG paths and hit-tests the stroke body",
+          "duration": 0.3422919999999863,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink commands, undo and merge"
+          ],
+          "fullName": "ink commands, undo and merge adds, erases and clears strokes as undoable edits with stamps",
+          "status": "passed",
+          "title": "adds, erases and clears strokes as undoable edits with stamps",
+          "duration": 1.245207999999991,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "ink commands, undo and merge"
+          ],
+          "fullName": "ink commands, undo and merge merges strokes drawn on two devices and honours erasures",
+          "status": "passed",
+          "title": "merges strokes drawn on two devices and honours erasures",
+          "duration": 0.9234589999999798,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963035,
+      "endTime": 1789926963058.9233,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/ink.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "safe document Markdown"
+          ],
+          "fullName": "safe document Markdown resolves explicit relative links and fragments without escaping the visible vault",
+          "status": "passed",
+          "title": "resolves explicit relative links and fragments without escaping the visible vault",
+          "duration": 1.3116249999999923,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "safe document Markdown"
+          ],
+          "fullName": "safe document Markdown renders tables and read-only checklists",
+          "status": "passed",
+          "title": "renders tables and read-only checklists",
+          "duration": 9.181916999999999,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "safe document Markdown"
+          ],
+          "fullName": "safe document Markdown turns wiki links into explicit buttons, preserving code as authored",
+          "status": "passed",
+          "title": "turns wiki links into explicit buttons, preserving code as authored",
+          "duration": 1.7565419999999676,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "safe document Markdown"
+          ],
+          "fullName": "safe document Markdown does not mount raw HTML or remote images, or make unsafe paths clickable",
+          "status": "passed",
+          "title": "does not mount raw HTML or remote images, or make unsafe paths clickable",
+          "duration": 2.287167000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963130,
+      "endTime": 1789926963144.287,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/markdown.test.tsx"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits combines edits to different records without overlaps",
+          "status": "passed",
+          "title": "combines edits to different records without overlaps",
+          "duration": 16.849666000000013,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits keeps both sides when the same card moves on both devices and reports the overlap",
+          "status": "passed",
+          "title": "keeps both sides when the same card moves on both devices and reports the overlap",
+          "duration": 1.7233750000000327,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits lets the more recent stamp win when both sides changed one field",
+          "status": "passed",
+          "title": "lets the more recent stamp win when both sides changed one field",
+          "duration": 1.1201249999999732,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits keeps additions from both sides and removals that nobody edited",
+          "status": "passed",
+          "title": "keeps additions from both sides and removals that nobody edited",
+          "duration": 0.44666599999999335,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits prefers keeping a record that one side edited while the other removed it",
+          "status": "passed",
+          "title": "prefers keeping a record that one side edited while the other removed it",
+          "duration": 0.4712499999999977,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits repairs a prerequisite on a task the other side deleted",
+          "status": "passed",
+          "title": "repairs a prerequisite on a task the other side deleted",
+          "duration": 0.4852499999999509,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits merges tags and prerequisites as sets and checklists by item ID",
+          "status": "passed",
+          "title": "merges tags and prerequisites as sets and checklists by item ID",
+          "duration": 0.9486670000000004,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits resolves both devices placing the same task by keeping the already synced card",
+          "status": "passed",
+          "title": "resolves both devices placing the same task by keeping the already synced card",
+          "duration": 0.6098749999999882,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits refuses a combination that would create a dependency cycle",
+          "status": "passed",
+          "title": "refuses a combination that would create a dependency cycle",
+          "duration": 1.445415999999966,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits preserves unknown extension fields and board-level edits",
+          "status": "passed",
+          "title": "preserves unknown extension fields and board-level edits",
+          "duration": 0.7908750000000282,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "three-way merge of concurrent board edits"
+          ],
+          "fullName": "three-way merge of concurrent board edits diff lists additions, removals and grouped field changes",
+          "status": "passed",
+          "title": "diff lists additions, removals and grouped field changes",
+          "duration": 0.336749999999995,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "stamps, canonical serialization and history rebasing"
+          ],
+          "fullName": "stamps, canonical serialization and history rebasing stamps only the records an edit changed",
+          "status": "passed",
+          "title": "stamps only the records an edit changed",
+          "duration": 3.026707999999985,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "stamps, canonical serialization and history rebasing"
+          ],
+          "fullName": "stamps, canonical serialization and history rebasing serializes records in a stable key order and round-trips exactly",
+          "status": "passed",
+          "title": "serializes records in a stable key order and round-trips exactly",
+          "duration": 0.7330000000000041,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "stamps, canonical serialization and history rebasing"
+          ],
+          "fullName": "stamps, canonical serialization and history rebasing rebases undo history across merged remote changes and drops what cannot be rebased",
+          "status": "passed",
+          "title": "rebases undo history across merged remote changes and drops what cannot be rebased",
+          "duration": 1.2989170000000172,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "stamps, canonical serialization and history rebasing"
+          ],
+          "fullName": "stamps, canonical serialization and history rebasing adds whole days to date-only deadlines without UTC drift",
+          "status": "passed",
+          "title": "adds whole days to date-only deadlines without UTC drift",
+          "duration": 0.10520800000000463,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "stamps, canonical serialization and history rebasing"
+          ],
+          "fullName": "stamps, canonical serialization and history rebasing rejects a self-dependency through setDependency at validation",
+          "status": "passed",
+          "title": "rejects a self-dependency through setDependency at validation",
+          "duration": 0.4349579999999946,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963031,
+      "endTime": 1789926963062.435,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/merge.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files create/edit/move/reopen preserves records and surrounding Markdown",
+          "status": "passed",
+          "title": "create/edit/move/reopen preserves records and surrounding Markdown",
+          "duration": 26.640957999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files does not write for subscription/view changes or camera state",
+          "status": "passed",
+          "title": "does not write for subscription/view changes or camera state",
+          "duration": 4.122250000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files debounces text edits and serializes concurrent flush requests",
+          "status": "passed",
+          "title": "debounces text edits and serializes concurrent flush requests",
+          "duration": 3.743499999999983,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files writes one recovery draft per burst, and none when the save lands first",
+          "status": "passed",
+          "title": "writes one recovery draft per burst, and none when the save lands first",
+          "duration": 955.418042,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files stamps changed records with the storage stamp when one is configured",
+          "status": "passed",
+          "title": "stamps changed records with the storage stamp when one is configured",
+          "duration": 9.367499999999836,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files reloads external edits without changing stable IDs or coordinates and keeps local undo usable",
+          "status": "passed",
+          "title": "reloads external edits without changing stable IDs or coordinates and keeps local undo usable",
+          "duration": 6.170041000000083,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files merges a concurrent external edit to another record instead of conflicting",
+          "status": "passed",
+          "title": "merges a concurrent external edit to another record instead of conflicting",
+          "duration": 4.797416999999996,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files merges at commit time when the file changed under a pending save",
+          "status": "passed",
+          "title": "merges at commit time when the file changed under a pending save",
+          "duration": 4.077624999999898,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files reports same-field overlaps, keeps local work, and can take the other side",
+          "status": "passed",
+          "title": "reports same-field overlaps, keeps local work, and can take the other side",
+          "duration": 3.866166000000021,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files falls back to an explicit conflict when changes cannot be combined",
+          "status": "passed",
+          "title": "falls back to an explicit conflict when changes cannot be combined",
+          "duration": 4.4107910000000174,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files invalid JSON retains display and blocks autosave",
+          "status": "passed",
+          "title": "invalid JSON retains display and blocks autosave",
+          "duration": 2.006750000000011,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files unsupported schema opens read-only without an empty replacement",
+          "status": "passed",
+          "title": "unsupported schema opens read-only without an empty replacement",
+          "duration": 1.4446669999999813,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files preserves local work before reload and never discards if preservation fails",
+          "status": "passed",
+          "title": "preserves local work before reload and never discards if preservation fails",
+          "duration": 2.7994160000000647,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files preserves concurrent changes to prose outside the block",
+          "status": "passed",
+          "title": "preserves concurrent changes to prose outside the block",
+          "duration": 1.5440840000001117,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files source editor suspension blocks new edits and pauses pending writes until revalidated",
+          "status": "passed",
+          "title": "source editor suspension blocks new edits and pauses pending writes until revalidated",
+          "duration": 1.7484999999999218,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files source edits made during suspension are combined with local work after the editor closes",
+          "status": "passed",
+          "title": "source edits made during suspension are combined with local work after the editor closes",
+          "duration": 2.355374999999867,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files source editor opening inside process cannot be overwritten",
+          "status": "passed",
+          "title": "source editor opening inside process cannot be overwritten",
+          "duration": 1.0698749999999109,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files suppresses self reloads by payload identity and observes the next real change",
+          "status": "passed",
+          "title": "suppresses self reloads by payload identity and observes the next real change",
+          "duration": 2.305749999999989,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files recovery draft on restart is combined with newer source, or conflicts if it cannot be",
+          "status": "passed",
+          "title": "recovery draft on restart is combined with newer source, or conflicts if it cannot be",
+          "duration": 2.4568340000000717,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files two subscribers observe one canonical model and shared undo",
+          "status": "passed",
+          "title": "two subscribers observe one canonical model and shared undo",
+          "duration": 1.330833999999868,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files deletion preserves recoverable local copy",
+          "status": "passed",
+          "title": "deletion preserves recoverable local copy",
+          "duration": 1.2094170000000304,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files tracks edits made while an earlier write is in flight",
+          "status": "passed",
+          "title": "tracks edits made while an earlier write is in flight",
+          "duration": 13.972333000000162,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "persistence against temporary Markdown files"
+          ],
+          "fullName": "persistence against temporary Markdown files keeps edits made during a merging write on top of the merged result",
+          "status": "passed",
+          "title": "keeps edits made during a merging write on top of the merged result",
+          "duration": 13.35629199999994,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing saves the full Markdown, including properties, without touching board data",
+          "status": "passed",
+          "title": "saves the full Markdown, including properties, without touching board data",
+          "duration": 1.2800829999998768,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing refuses concurrent edits and restores the unsaved draft after reopening",
+          "status": "passed",
+          "title": "refuses concurrent edits and restores the unsaved draft after reopening",
+          "duration": 0.8266249999999218,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing refuses a source editor opened after editing starts",
+          "status": "passed",
+          "title": "refuses a source editor opened after editing starts",
+          "duration": 0.6894170000000486,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing never replaces board notes or saves truncated previews",
+          "status": "passed",
+          "title": "never replaces board notes or saves truncated previews",
+          "duration": 0.6679590000001099,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing retains edits when the underlying file cannot be written",
+          "status": "passed",
+          "title": "retains edits when the underlying file cannot be written",
+          "duration": 0.819208000000117,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "inline document editing"
+          ],
+          "fullName": "inline document editing serializes recovery writes so an older draft cannot reappear after save",
+          "status": "passed",
+          "title": "serializes recovery writes so an older draft cannot reappear after save",
+          "duration": 35.76712500000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963035,
+      "endTime": 1789926964145.767,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/persistence.test.ts"
+    },
+    {
+      "assertionResults": [
+        {
+          "ancestorTitles": [
+            "calendar and daily planning"
+          ],
+          "fullName": "calendar and daily planning builds six Monday-first weeks, including leap days and adjacent months",
+          "status": "passed",
+          "title": "builds six Monday-first weeks, including leap days and adjacent months",
+          "duration": 2.5751670000000217,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "calendar and daily planning"
+          ],
+          "fullName": "calendar and daily planning navigates month and year boundaries without day overflow",
+          "status": "passed",
+          "title": "navigates month and year boundaries without day overflow",
+          "duration": 0.5862079999999992,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "calendar and daily planning"
+          ],
+          "fullName": "calendar and daily planning keeps small years, leap days and DST date arithmetic intact",
+          "status": "passed",
+          "title": "keeps small years, leap days and DST date arithmetic intact",
+          "duration": 10.503250000000008,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "calendar and daily planning"
+          ],
+          "fullName": "calendar and daily planning includes unplaced tasks, keeps completed daily tasks, and excludes completed overdue work",
+          "status": "passed",
+          "title": "includes unplaced tasks, keeps completed daily tasks, and excludes completed overdue work",
+          "duration": 4.469916000000012,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "calendar and daily planning"
+          ],
+          "fullName": "calendar and daily planning rescheduling survives a source round trip and undo without creating or moving cards",
+          "status": "passed",
+          "title": "rescheduling survives a source round trip and undo without creating or moving cards",
+          "duration": 2.560916999999961,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "assignees and collaboration"
+          ],
+          "fullName": "assignees and collaboration reads old boards unchanged, preserves assignments and rejects malformed owners",
+          "status": "passed",
+          "title": "reads old boards unchanged, preserves assignments and rejects malformed owners",
+          "duration": 1.4029590000000098,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "assignees and collaboration"
+          ],
+          "fullName": "assignees and collaboration filters everyone, one assignee, unassigned work, and searches by owner",
+          "status": "passed",
+          "title": "filters everyone, one assignee, unassigned work, and searches by owner",
+          "duration": 0.44016700000003084,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        },
+        {
+          "ancestorTitles": [
+            "assignees and collaboration"
+          ],
+          "fullName": "assignees and collaboration combines assignment with concurrent scheduling and reviews assignment overlaps",
+          "status": "passed",
+          "title": "combines assignment with concurrent scheduling and reviews assignment overlaps",
+          "duration": 1.7127500000000282,
+          "failureMessages": [],
+          "meta": {},
+          "tags": [],
+          "benchmarks": []
+        }
+      ],
+      "startTime": 1789926963033,
+      "endTime": 1789926963057.7126,
+      "status": "passed",
+      "message": "",
+      "name": "<repository>/tests/planner.test.ts"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { Handle, NodeResizer, Position, useStore, type Node, type NodeProps } fr
 import { addDays, type BoardNode, type Task } from '../domain/model';
 import type { BoardHost } from './ports';
 import { Markdown } from './Markdown';
+import { CanvasNote } from './CanvasNote';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
 export type CardData = {
   node: BoardNode;
@@ -17,6 +18,9 @@ export type CardData = {
   /** True for a few seconds after another device changed this record. */
   recent: boolean;
   complete: (id: string) => void;
+  previewNote: (path: string) => void;
+  expanded: boolean;
+  expandNote: (id: string, expanded: boolean) => void;
   resize: (id: string, params: { x: number; y: number; width: number; height: number }) => void;
   begin: () => void;
   /** Inline edit of the card's primary text: task title, frame title or sticky content. */
@@ -52,6 +56,13 @@ function InlineText({
 }) {
   const [text, setText] = useState(value);
   const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  const finished = useRef(false);
+  const finish = (cancel = false) => {
+    if (finished.current) return;
+    finished.current = true;
+    if (cancel) onCancel();
+    else onCommit(text);
+  };
   useEffect(() => {
     ref.current?.focus();
     ref.current?.select();
@@ -60,10 +71,10 @@ function InlineText({
     e.stopPropagation();
     if (e.key === 'Escape') {
       e.preventDefault();
-      onCancel();
+      finish(true);
     } else if (e.key === 'Enter' && (!multiline || e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      onCommit(text);
+      finish();
     }
   };
   const props = {
@@ -72,7 +83,7 @@ function InlineText({
     'aria-label': label,
     className: 'rb-inline nodrag nopan nowheel',
     onChange: (e: { target: { value: string } }) => setText(e.target.value),
-    onBlur: () => onCommit(text),
+    onBlur: () => finish(),
     onKeyDown: keyDown,
     onPointerDown: (e: { stopPropagation: () => void }) => e.stopPropagation(),
   };
@@ -97,14 +108,26 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
       data-testid={`card-${node.type}`}
     >
       <NodeResizer
-        isVisible={selected && !readOnly}
+        isVisible={selected && !readOnly && !data.expanded}
         minWidth={isFrame ? 240 : 180}
         minHeight={isFrame ? 140 : 120}
         onResizeStart={data.begin}
         onResizeEnd={(_, params) => data.resize(id, params)}
       />
-      <Handle type="target" position={Position.Left} id="left" isConnectable={!readOnly} aria-label="Connect from the left" />
-      <Handle type="target" position={Position.Top} id="top" isConnectable={!readOnly} aria-label="Connect from the top" />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="left"
+        isConnectable={!readOnly}
+        aria-label="Connect from the left"
+      />
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="top"
+        isConnectable={!readOnly}
+        aria-label="Connect from the top"
+      />
       {node.type === 'task' && task && (
         <>
           <div className="rb-card-head">
@@ -113,7 +136,10 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
               {statusLabel[task.status]}
             </span>
             {task.priority !== 'none' && (
-              <span className={`rb-chip rb-priority rb-priority-${task.priority}`} title={`${task.priority} priority`}>
+              <span
+                className={`rb-chip rb-priority rb-priority-${task.priority}`}
+                title={`${task.priority} priority`}
+              >
                 <Icon name={priorityIcon[task.priority]!} />
                 {task.priority}
               </span>
@@ -135,7 +161,12 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
               <Icon name={task.status === 'done' ? 'circle-check-big' : 'circle'} />
             </button>
             {editing ? (
-              <InlineText value={task.title} label="Edit task title" onCommit={commit} onCancel={() => setEditing(false)} />
+              <InlineText
+                value={task.title}
+                label="Edit task title"
+                onCommit={commit}
+                onCancel={() => setEditing(false)}
+              />
             ) : (
               <strong onDoubleClick={startEdit} title={readOnly ? undefined : 'Double-click to rename'}>
                 {task.title}
@@ -144,6 +175,12 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
           </div>
           {!minimal && (
             <div className="rb-card-meta">
+              {task.assignee && (
+                <span className="rb-meta">
+                  <Icon name="user-round" />
+                  {task.assignee}
+                </span>
+              )}
               {task.dueDate && (
                 <span className={`rb-meta${data.overdue ? ' rb-overdue' : ''}`} title={task.dueDate}>
                   <Icon name={data.overdue ? 'alarm-clock' : 'calendar'} />
@@ -166,8 +203,11 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
               {task.notePath && (
                 <button
                   className={`rb-meta rb-note-link nodrag${data.missing ? ' rb-overdue' : ''}`}
-                  aria-label={`Open linked note ${task.notePath}`}
-                  onClick={() => host.openNote(task.notePath!)}
+                  aria-label={`Read linked note ${task.notePath}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    data.expandNote(id, !data.expanded);
+                  }}
                 >
                   <Icon name={data.missing ? 'file-x' : 'file-text'} />
                   {data.missing ? 'Missing note' : 'Note'}
@@ -184,6 +224,17 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
                 </span>
               )}
             </div>
+          )}
+          {data.expanded && task.notePath && (
+            <CanvasNote
+              host={host}
+              path={task.notePath}
+              expanded
+              expand={(value) => data.expandNote(id, value)}
+              readOnly={readOnly}
+              minimal={minimal}
+              missing={data.missing}
+            />
           )}
         </>
       )}
@@ -215,37 +266,54 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
           <div className="rb-card-head">
             <span className="rb-chip">
               <Icon name="link" />
-              Vault note
+              {data.missing ? 'Missing note' : 'Vault note'}
             </span>
           </div>
           <div className="rb-card-title">
             <Icon name={data.missing ? 'file-x' : 'file-text'} className="rb-icon-lg" />
             <strong>{node.notePath.split('/').pop()?.replace(/\.md$/, '')}</strong>
           </div>
-          <div className="rb-card-meta">
-            {!minimal && <span className="rb-path">{node.notePath}</span>}
-            <button
-              className={`rb-meta rb-note-link nodrag${data.missing ? ' rb-overdue' : ''}`}
-              onClick={() => host.openNote(node.notePath)}
-            >
-              <Icon name="arrow-up-right" />
-              {data.missing ? 'Missing note' : 'Open'}
-            </button>
-          </div>
+          {!minimal && <span className="rb-path">{node.notePath}</span>}
+          <CanvasNote
+            host={host}
+            path={node.notePath}
+            expanded={data.expanded}
+            expand={(value) => data.expandNote(id, value)}
+            readOnly={readOnly}
+            minimal={minimal}
+            missing={data.missing}
+          />
         </>
       )}
       {isFrame && (
         <div className="rb-frame-label">
           {editing ? (
-            <InlineText value={node.title} label="Edit frame name" onCommit={commit} onCancel={() => setEditing(false)} />
+            <InlineText
+              value={node.title}
+              label="Edit frame name"
+              onCommit={commit}
+              onCancel={() => setEditing(false)}
+            />
           ) : (
             <strong onDoubleClick={startEdit}>{node.title}</strong>
           )}
           <span>{data.count}</span>
         </div>
       )}
-      <Handle type="source" position={Position.Right} id="right" isConnectable={!readOnly} aria-label="Connect to the right" />
-      <Handle type="source" position={Position.Bottom} id="bottom" isConnectable={!readOnly} aria-label="Connect to the bottom" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        isConnectable={!readOnly}
+        aria-label="Connect to the right"
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        isConnectable={!readOnly}
+        aria-label="Connect to the bottom"
+      />
     </div>
   );
 });

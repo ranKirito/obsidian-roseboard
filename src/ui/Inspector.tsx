@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import {
   type Board,
   type BoardNode,
@@ -14,6 +14,7 @@ import { deleteTask, moveNodes, setDependency, type Edit } from '../domain/comma
 import type { BoardHost } from './ports';
 import { Markdown } from './Markdown';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
+import { NoteContent } from './Documents';
 const relative = (iso?: string) => {
   if (!iso) return '';
   const ms = Date.now() - new Date(iso).getTime();
@@ -37,6 +38,7 @@ export function Inspector({
   focus,
   edit,
   complete,
+  previewNote,
 }: {
   host: BoardHost;
   board: Board;
@@ -49,12 +51,14 @@ export function Inspector({
   focus: (id: string) => void;
   edit: (label: string, action: Edit, key?: string) => void;
   complete: (id: string) => void;
+  previewNote: (path: string) => void;
 }) {
   const node = nodeId ? board.nodes[nodeId] : undefined;
   const task = taskId ? board.tasks[taskId] : undefined;
   const edge = edgeId ? board.edges[edgeId] : undefined;
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [newItem, setNewItem] = useState('');
+  const assigneeOptions = useId();
   const description = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const el = description.current;
@@ -181,7 +185,11 @@ export function Inspector({
                   <button type="button" aria-label="Due tomorrow" onClick={() => setDue(addDays(today, 1))}>
                     Tomorrow
                   </button>
-                  <button type="button" aria-label="Due one week later" onClick={() => setDue(addDays(task.dueDate ?? today, 7))}>
+                  <button
+                    type="button"
+                    aria-label="Due one week later"
+                    onClick={() => setDue(addDays(task.dueDate ?? today, 7))}
+                  >
                     +1 week
                   </button>
                   {task.dueDate && (
@@ -190,6 +198,44 @@ export function Inspector({
                     </button>
                   )}
                 </span>
+              </label>
+              <label>
+                Assignee
+                <input
+                  aria-label="Task assignee"
+                  placeholder="Who is taking this?"
+                  maxLength={100}
+                  list={assigneeOptions}
+                  value={task.assignee ?? ''}
+                  onBlur={() => {
+                    if (task.assignee && task.assignee !== task.assignee.trim())
+                      updateTask({ assignee: task.assignee.trim() });
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    edit(
+                      'Assign task',
+                      (b) => {
+                        if (value.trim()) b.tasks[taskId]!.assignee = value;
+                        else delete b.tasks[taskId]!.assignee;
+                      },
+                      `${taskId}:assignee`,
+                    );
+                  }}
+                />
+                <datalist id={assigneeOptions}>
+                  {[
+                    ...new Set(
+                      Object.values(board.tasks)
+                        .map((t) => t.assignee)
+                        .filter(Boolean),
+                    ),
+                  ]
+                    .sort()
+                    .map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                </datalist>
               </label>
               <label>
                 Tags · comma separated
@@ -580,10 +626,29 @@ export function Inspector({
           </p>
         )}
         {(task?.notePath || node?.type === 'note') && (
-          <button type="button" onClick={() => host.openNote(task?.notePath ?? (node as { notePath: string }).notePath)}>
-            <Icon name="arrow-up-right" />
-            Open linked note
-          </button>
+          <>
+            <div className="rb-inspector-document">
+              <NoteContent
+                host={host}
+                path={task?.notePath ?? (node as { notePath: string }).notePath}
+                compact
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => previewNote(task?.notePath ?? (node as { notePath: string }).notePath)}
+            >
+              <Icon name="book-open" />
+              Read in board
+            </button>
+            <button
+              type="button"
+              onClick={() => host.openNote(task?.notePath ?? (node as { notePath: string }).notePath)}
+            >
+              <Icon name="arrow-up-right" />
+              Open linked note
+            </button>
+          </>
         )}
         {task && taskId && (
           <button

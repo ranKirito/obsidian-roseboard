@@ -19,7 +19,7 @@ export const statuses = ['backlog', 'todo', 'doing', 'done'] as const;
 export const priorities = ['none', 'low', 'medium', 'high'] as const;
 /** Named card tints. Stored as names so a theme can reinterpret them; never as raw hex. */
 export const colors = ['rose', 'amber', 'mint', 'sky', 'violet', 'slate'] as const;
-const dateOnly = z
+export const dateOnly = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .refine((v) => {
@@ -55,6 +55,7 @@ export const taskSchema = z
       .default([]),
     dependsOn: z.array(id).max(10000).default([]),
     notePath: vaultPath.optional(),
+    assignee: z.string().max(100).optional(),
     ...stamp,
   })
   .passthrough();
@@ -212,9 +213,9 @@ export function localDate(timeZone: string, now = new Date()): string {
 }
 /** Adds whole days to a date-only string without any UTC round trip. */
 export function addDays(date: string, days: number): string {
-  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
-  const next = new Date(Date.UTC(y, m - 1, d + days));
-  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
+  const next = new Date(`${date}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return `${String(next.getUTCFullYear()).padStart(4, '0')}-${String(next.getUTCMonth() + 1).padStart(2, '0')}-${String(next.getUTCDate()).padStart(2, '0')}`;
 }
 export const blocked = (task: Task, board: Board): boolean =>
   task.dependsOn.some((id) => board.tasks[id]?.status !== 'done');
@@ -228,6 +229,8 @@ export interface Filters {
   due: string;
   blocked: string;
   preset: string;
+  assignee?: string;
+  unassigned?: boolean;
 }
 export const emptyFilters: Filters = {
   search: '',
@@ -248,12 +251,14 @@ export function matches(
   const isBlocked = blocked(task, board);
   if (
     filters.search &&
-    ![task.title, task.description, ...task.tags]
+    ![task.title, task.description, task.assignee ?? '', ...task.tags]
       .join(' ')
       .toLowerCase()
       .includes(filters.search.toLowerCase())
   )
     return false;
+  if (filters.assignee && task.assignee !== filters.assignee) return false;
+  if (filters.unassigned && task.assignee?.trim()) return false;
   if (
     (filters.status && task.status !== filters.status) ||
     (filters.priority && task.priority !== filters.priority) ||

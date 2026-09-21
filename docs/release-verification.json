@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-09-20T17:57:43.853751+00:00",
+  "archive": "release/roseboard-1.4.0.zip",
+  "archiveSHA256": "66b0275e3ddc29285a9615981c68915b52f46ac67ae578362ce33a037b1c584b",
+  "checks": {
+    "main.js": {
+      "matchesTestedBuild": true,
+      "sha256": "ec1248060f6dcc491b76478c5fdb7f9f2c7b77f4b1c2935aef13bd09c257499a"
+    },
+    "styles.css": {
+      "matchesTestedBuild": true,
+      "sha256": "70900e47c1c83c7ce5add905778495f2bc31c3e516e0572483894d032d65df47"
+    },
+    "manifest.json": {
+      "matchesTestedBuild": true,
+      "sha256": "bea611804fae66fb80566c580a09a3a04db64c4e9cbb4e08ef83c14de6dc039c"
+    }
+  }
+}

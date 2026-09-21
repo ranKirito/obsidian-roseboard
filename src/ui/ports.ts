@@ -1,4 +1,5 @@
 import type { BoardSession } from '../persistence/session';
+import type { NoteSession } from '../persistence/note-session';
 /** How wheel events are interpreted. `auto` detects a mouse wheel from its notch-sized deltas. */
 export type InputDevice = 'auto' | 'trackpad' | 'mouse';
 export interface Preferences {
@@ -25,8 +26,11 @@ export interface BoardHost {
   session: BoardSession;
   openSource(): Promise<void>;
   exportJSON(): Promise<void>;
-  openNote(path: string): void;
+  openNote(path: string, sourcePath?: string): void;
   noteExists(path: string): boolean;
+  readNote(path: string): Promise<{ path: string; text: string; truncated: boolean } | undefined>;
+  editNote(path: string): Promise<NoteSession>;
+  subscribeNote(path: string, callback: () => void): () => void;
   pickNote(): Promise<string | undefined>;
   confirm(title: string, description: string): Promise<boolean>;
   notify(message: string): void;

@@ -1,6 +1,6 @@
 # Roseboard storage v1
 
-Schema: `schema/roseboard-v1.schema.json`. Strict TypeScript and the runtime validator are in `src/domain/model.ts`. The JSON Schema describes structure; runtime refinements also enforce the invariants below. Unknown object fields survive parsing, editing, duplication, undo, merging, and saving. The schema version stays **1**: every field 1.1 adds is optional, so 1.0.0 reads 1.1 boards as ordinary extensions.
+Schema: `schema/roseboard-v1.schema.json`. Strict TypeScript and the runtime validator are in `src/domain/model.ts`. The JSON Schema describes structure; runtime refinements also enforce the invariants below. Unknown object fields survive parsing, editing, duplication, undo, merging, and saving. The schema version stays **1**: fields added in 1.1–1.3 are optional, so older readers preserve them as ordinary extensions.
 
 ## Envelope and defaults
 
@@ -21,6 +21,7 @@ Task records live in `tasks[taskId]`:
 | `checklist` | Empty array of `{id, text, done}`; `done` defaults to false |
 | `dependsOn` | Empty array of prerequisite task IDs |
 | `notePath` | Absent; visible relative vault path, normally a full `.md` path |
+| `assignee` | Absent; optional person or team label, up to 100 characters (since 1.3) |
 | `updatedAt` | Absent; ISO 8601 date-time with offset, written by the device that last changed this record |
 | `updatedBy` | Absent; up to 100 characters, the editing device's configured name |
 
@@ -39,7 +40,15 @@ Every node may also carry `color` (one of `rose`, `amber`, `mint`, `sky`, `viole
 
 `edges[edgeId] = {source, target, label}` stores ordinary visual relationships between existing node IDs. `label` defaults to empty. Dependencies must never be copied here: prerequisite A → dependent B is exclusively `tasks[B].dependsOn` containing A. Both arrow endpoints must have placements to display the derived arrow; all prerequisites remain editable in List/inspector regardless of placement.
 
-## Ink
+## Planning and document previews (1.3–1.4)
+
+Day and Calendar project existing task `dueDate` values into the board timezone. Quick capture creates an ordinary task with that date and no placement. Rescheduling changes only `dueDate`; completion changes only status. Completed tasks remain visible on their date and never appear in Overdue or Unscheduled. Filters apply to all task views, including calendar counts and daily progress. There is no recurrence generation, separate calendar store, or cross-board task aggregation.
+
+The optional `assignee` field is a label, independent of the editing device's `updatedBy` stamp. Its merge, overlap review, undo and canonical serialization use the ordinary task-field rules. Versions before 1.3 preserve it as an unknown extension. Existing boards need no migration and are not rewritten on open.
+
+Document cards and the Documents library read linked Markdown through `Vault.cachedRead`. The library includes note cards and task note links, deduplicated by their stored path. Bodies are never embedded into board JSON. Mounted readers watch vault file events and release their listeners when closed. Card previews render at most 2,400 characters; full readers render at most 100,000 and show a truncation notice. YAML properties are omitted from the preview. Markdown tables, disabled checklist controls and wiki links render without executing raw HTML, code blocks, embeds or other plugins; images are omitted. Since 1.4, card editing can save the linked Markdown directly; the library itself remains a reader. The reader does not recursively mount Roseboard blocks, and a missing file is shown as missing rather than replaced.
+
+## Ink (1.2)
 
 An optional top-level `ink` record holds freehand strokes: `ink[strokeId] = {points, color, width}` plus the optional stamps. `points` is a flat array `[x0, y0, x1, y1, …]` of at least two absolute world-coordinate pairs (maximum 20,000 pairs); `color` is one of `ink`, `rose`, `amber`, `mint`, `sky`, `violet`, `slate` (default `ink`, the foreground colour); `width` is 1–40 world pixels (default 3). Strokes have no placement record and no relationship to cards; they simply share the coordinate space. A board with no strokes omits `ink` entirely; the plugin removes an empty map when saving. Readers that predate 1.2 treat `ink` as an unknown extension and preserve it. Stroke keys are sorted like the other records.
 
@@ -97,3 +106,11 @@ When the source changes while local edits are pending (a file event, a save that
 - On success the merged board becomes the local model, the new payload becomes the baseline, and undo history is rebased so that undo steps back through local edits only and never reverts the other side's work. The merged result is saved if it differs from the new payload.
 
 The merge never contacts another device and never resolves by silent last-writer-wins at the whole-board level. Two boards that diverged in unmergeable ways still surface the existing conflict path. There is no cross-device lock, CRDT, or claim that Markdown storage alone verifies LiveSync behavior.
+
+## Inline note editing and recovery (1.4)
+
+Expanded reading bounds are transient, per-view state and never written to node records. Read/Collapse do not create board history entries or move the camera.
+
+A shared `NoteSession` edits a resolved visible Markdown path. It reads the entire note (at most 100,000 characters for editing), including properties. Saving uses synchronous `Vault.process` compare-and-replace against the original text; a changed baseline is a conflict, not an invitation to replace the file. An already identical result is accepted as an idempotent save. Notes open in source editors and notes containing Roseboard fences are excluded. No text merge or board-undo entry is created.
+
+Unsaved note drafts use `note-<SHA-256-of-path>.json` in the plugin recovery folder, with `{path, baseline, text}`. They are distinct from board recovery and contain no task database. Draft writes are serialized and debounced by 400 ms; unmount/background/unload attempts to flush them. Save and confirmed Cancel clear the draft. Restored drafts still compare against the original baseline, and conflicts offer a separately created `- recovered.md` copy without overwriting an existing note. Active drafts follow file/folder renames. Local draft persistence is not a sync acknowledgement or a hard-crash guarantee.
