@@ -6,6 +6,8 @@ The renderer-security scenario exercises script resource initialization, module 
 
 The original 1.4.0 release passed 91 automated checks and 54 integration scenarios on 2026-09-20. Its historical package hashes remain in Git history.
 
+Community Directory verification, 2026-09-21: the release scan for public commit `42265f4` completed with no blocking errors. Obsidian reproduced the released `main.js` byte-for-byte. The public listing reports version 1.4.1 and exposes an active **Add to Obsidian** link. Nonblocking source/CSS warnings and release-provenance recommendations remain; this is not a claim that every recommendation has been resolved.
+
 ## Implemented in 1.4
 
 - Compact header with a view picker, on-demand search, filters, properties, a New menu and grouped board actions. Canvas tools use a floating palette with accessible names, active states and hover/focus labels; camera options sit beside zoom. The desktop header is 52 CSS pixels tall and narrow panes use two rows.

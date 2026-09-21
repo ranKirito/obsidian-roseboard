@@ -8,7 +8,7 @@ A local-first visual task canvas for Obsidian. Charcoal surfaces, restrained ros
 
 **[Download 1.4.1](https://github.com/ranKirito/obsidian-roseboard/releases/tag/1.4.1)** · **[Report a bug or suggest an improvement](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose)**
 
-Version 1.4.1 is the only supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) shows the current review and installation status. Manual installation is available below.
+Version 1.4.1 is the only supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) is live: choose **Add to Obsidian**, then install and enable Roseboard. Manual installation is available below.
 
 ## What is new in 1.4
 
