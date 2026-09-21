@@ -2,7 +2,7 @@
 
 ## Distribution — 2026-09-21
 
-- Consolidated development onto main and published the tested 1.4.0 build in the public plugin repository. Added installation links and structured feedback forms. Version 1.4.0 is the sole supported downloadable release; older work remains in Git history.
+- Consolidated development onto main and published the tested 1.4.0 build in the public plugin repository. Added installation links and structured feedback forms, and published the Community Directory listing for automated review. Version 1.4.0 is the sole supported downloadable release; older work remains in Git history.
 
 ## 1.4.0 — 2026-09-20
 
