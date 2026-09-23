@@ -10,7 +10,7 @@ import { validateBoard, type Board } from './model';
  * person can still pick the other value. The result is validated; an impossible result throws and
  * the caller falls back to the explicit conflict path. Nothing here touches the file system.
  */
-export type Kind = 'task' | 'node' | 'edge' | 'ink' | 'board';
+export type Kind = 'task' | 'node' | 'edge' | 'ink' | 'routine' | 'board';
 export interface Overlap {
   kind: Kind;
   id: string;
@@ -40,7 +40,8 @@ const same = (a: unknown, b: unknown) => a === b || JSON.stringify(a) === JSON.s
 const groups: Record<string, string[]> = { position: ['x', 'y'], size: ['width', 'height'] };
 const groupOf = (field: string) =>
   Object.entries(groups).find(([, fields]) => fields.includes(field))?.[0] ?? field;
-const setFields = new Set(['tags', 'dependsOn']);
+/** Order-free lists: additions and removals from both sides combine. */
+const setFields = new Set(['tags', 'dependsOn', 'days', 'done']);
 function newer(mine: Rec, theirs: Rec): 'mine' | 'theirs' {
   const a = typeof mine.updatedAt === 'string' ? mine.updatedAt : '',
     b = typeof theirs.updatedAt === 'string' ? theirs.updatedAt : '';
@@ -249,6 +250,7 @@ export function diff(previous: Board, next: Board): Change[] {
     ['node', previous.nodes, next.nodes],
     ['edge', previous.edges, next.edges],
     ['ink', previous.ink ?? {}, next.ink ?? {}],
+    ['routine', previous.routines ?? {}, next.routines ?? {}],
   ];
   for (const [kind, a, b] of collections)
     for (const id of new Set([...Object.keys(a), ...Object.keys(b)])) {
@@ -276,7 +278,7 @@ export function merge(base: Board, mine: Board, theirs: Board): MergeResult {
   const overlaps: Overlap[] = [];
   const merged: Rec = {};
   for (const field of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
-    if (['tasks', 'nodes', 'edges', 'ink'].includes(field)) continue;
+    if (['tasks', 'nodes', 'edges', 'ink', 'routines'].includes(field)) continue;
     const bv = (base as Rec)[field],
       mv = (mine as Rec)[field],
       tv = (theirs as Rec)[field];
@@ -295,6 +297,15 @@ export function merge(base: Board, mine: Board, theirs: Board): MergeResult {
   const ink = mergeCollection('ink', base.ink ?? {}, mine.ink ?? {}, theirs.ink ?? {}, overlaps);
   if (Object.keys(ink).length) merged.ink = ink;
   else delete merged.ink;
+  const routines = mergeCollection(
+    'routine',
+    base.routines ?? {},
+    mine.routines ?? {},
+    theirs.routines ?? {},
+    overlaps,
+  );
+  if (Object.keys(routines).length) merged.routines = routines;
+  else delete merged.routines;
   const board = validateBoard(
     repair(structuredClone(merged) as Board, overlaps, new Set(Object.keys(theirs.nodes))),
   );
@@ -305,7 +316,7 @@ export function resolve(board: Board, overlap: Overlap, side: 'mine' | 'theirs')
   const value = side === 'mine' ? overlap.mine : overlap.theirs;
   const next = structuredClone(board) as Rec;
   const key = overlap.kind === 'ink' ? 'ink' : `${overlap.kind}s`;
-  if (overlap.kind === 'ink' && !next.ink) next.ink = {};
+  if ((overlap.kind === 'ink' || overlap.kind === 'routine') && !next[key]) next[key] = {};
   const collection = overlap.kind === 'board' ? undefined : (next[key] as Record<string, Rec>);
   if (overlap.field === 'removed') {
     if (!collection) return board;

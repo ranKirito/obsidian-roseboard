@@ -1,4 +1,12 @@
-import { memo, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  memo,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { Handle, NodeResizer, Position, useStore, type Node, type NodeProps } from '@xyflow/react';
 import { addDays, type BoardNode, type Task } from '../domain/model';
 import type { BoardHost } from './ports';
@@ -25,7 +33,12 @@ export type CardData = {
   begin: () => void;
   /** Inline edit of the card's primary text: task title, frame title or sticky content. */
   setText: (nodeId: string, text: string) => void;
+  toggleCheck: (taskId: string, itemId: string) => void;
+  /** Reports the height the card's content needs; the view grows the card, never the saved size. */
+  fit: (nodeId: string, height: number, expanded: boolean) => void;
 };
+/** Checklist steps shown on a task card before the rest collapse into a count. */
+const CARD_STEPS = 8;
 export type FlowNode = Node<CardData, 'card'>;
 const lowDetail = (state: { transform: [number, number, number] }) => state.transform[2] < 0.5;
 export function formatDue(due: string, today: string): string {
@@ -89,10 +102,96 @@ function InlineText({
   };
   return multiline ? <textarea {...props} rows={6} /> : <input {...props} />;
 }
-export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNode>) {
+const inFlow = (el: Element): el is HTMLElement => {
+  if (!(el instanceof HTMLElement)) return false;
+  const style = getComputedStyle(el);
+  return style.display !== 'none' && style.position !== 'absolute' && style.position !== 'fixed';
+};
+const verticalBox = (style: CSSStyleDeclaration) =>
+  parseFloat(style.paddingTop) +
+  parseFloat(style.paddingBottom) +
+  parseFloat(style.borderTopWidth) +
+  parseFloat(style.borderBottomWidth);
+/**
+ * Height an element's content needs regardless of the height it currently has. Stretching regions
+ * (document previews, the Markdown editor) are measured by their content, so the result does not
+ * feed back into itself when the card grows or shrinks.
+ */
+function contentHeight(el: HTMLElement, root = false): number {
+  const style = getComputedStyle(el);
+  if (el instanceof HTMLTextAreaElement) {
+    const previous = { height: el.style.height, flex: el.style.flex, minHeight: el.style.minHeight };
+    el.setCssStyles({ height: '0px', flex: 'none', minHeight: '0px' });
+    const needed = el.scrollHeight;
+    el.setCssStyles(previous);
+    return Math.max(needed, 160) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+  }
+  if (el.classList.contains('rb-fit-scroll'))
+    return (
+      verticalBox(style) + [...el.children].filter(inFlow).reduce((sum, child) => sum + child.offsetHeight, 0)
+    );
+  if (!root && !el.querySelector('.rb-fit-scroll, textarea')) return el.offsetHeight;
+  const children = [...el.children].filter(inFlow);
+  const gap = parseFloat(style.rowGap) || 0;
+  return (
+    verticalBox(style) +
+    children.reduce((sum, child) => sum + contentHeight(child), 0) +
+    gap * Math.max(0, children.length - 1)
+  );
+}
+/** Re-measures when the card resizes, its content changes, or the note editor reports typing. */
+function useFit(ref: RefObject<HTMLDivElement | null>, report: (() => void) | undefined) {
+  const latest = useRef(report);
+  latest.current = report;
+  useLayoutEffect(() => latest.current?.());
+  const active = !!report;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !active) return;
+    let frame = 0;
+    const schedule = () => {
+      if (!frame)
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          latest.current?.();
+        });
+    };
+    const resize = new ResizeObserver(schedule);
+    resize.observe(el);
+    const mutation = new MutationObserver(schedule);
+    mutation.observe(el, { childList: true, subtree: true, characterData: true });
+    el.addEventListener('roseboard-fit', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      mutation.disconnect();
+      el.removeEventListener('roseboard-fit', schedule);
+    };
+  }, [ref, active]);
+}
+export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
   const { node, task, host, readOnly } = data;
   const minimal = useStore(lowDetail);
   const [editing, setEditing] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Task cards fit their checklist; documents fit their text while read or edited on the canvas.
+  const autoFit = node.type === 'task' || data.expanded;
+  // Content height doubles as the resize minimum, so a card cannot be dragged smaller than its text.
+  const [needed, setNeeded] = useState(0);
+  useFit(
+    cardRef,
+    autoFit
+      ? () => {
+          const el = cardRef.current;
+          if (!el?.isConnected) return;
+          // The node wrapper's 1px border sits outside the card element.
+          const height = Math.ceil(contentHeight(el, true)) + 2;
+          data.fit(id, height, data.expanded);
+          setNeeded((previous) => (Math.abs(previous - height) < 2 ? previous : height));
+        }
+      : undefined,
+  );
+  const steps = task?.checklist ?? [];
   const tint = node.color ? ` rb-tint-${node.color}` : '';
   const startEdit = () => {
     if (!readOnly) setEditing(true);
@@ -104,13 +203,15 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
   const isFrame = node.type === 'frame';
   return (
     <div
+      ref={cardRef}
       className={`rb-card rb-card-${node.type}${task?.status === 'done' ? ' rb-done' : ''}${tint}${data.recent ? ' rb-recent' : ''}${editing ? ' rb-editing' : ''}`}
       data-testid={`card-${node.type}`}
     >
+      {/* Always mounted: any edge or corner resizes, not only the selected card's. */}
       <NodeResizer
-        isVisible={selected && !readOnly && !data.expanded}
+        isVisible={!readOnly && !data.expanded}
         minWidth={isFrame ? 240 : 180}
-        minHeight={isFrame ? 140 : 120}
+        minHeight={isFrame ? 140 : node.type === 'task' ? Math.max(120, needed) : 120}
         onResizeStart={data.begin}
         onResizeEnd={(_, params) => data.resize(id, params)}
       />
@@ -173,6 +274,33 @@ export const Card = memo(function Card({ id, data, selected }: NodeProps<FlowNod
               </strong>
             )}
           </div>
+          {!minimal && steps.length > 0 && (
+            <ul className="rb-card-checklist">
+              {steps.slice(0, CARD_STEPS).map((item) => (
+                <li key={item.id} className={item.done ? 'is-done' : ''}>
+                  <button
+                    className="rb-card-check nodrag"
+                    role="checkbox"
+                    aria-checked={item.done}
+                    aria-label={`${item.done ? 'Reopen' : 'Complete'} step ${item.text}`}
+                    disabled={readOnly}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      data.toggleCheck(node.taskId, item.id);
+                    }}
+                  >
+                    <Icon name={item.done ? 'square-check' : 'square'} />
+                  </button>
+                  <span>{item.text.trim() || 'Untitled step'}</span>
+                </li>
+              ))}
+              {steps.length > CARD_STEPS && (
+                <li className="rb-card-check-more">
+                  +{steps.length - CARD_STEPS} more step{steps.length - CARD_STEPS === 1 ? '' : 's'}
+                </li>
+              )}
+            </ul>
+          )}
           {!minimal && (
             <div className="rb-card-meta">
               {task.assignee && (

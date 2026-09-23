@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import type { NoteSession } from '../persistence/note-session';
 import type { BoardHost } from './ports';
-import { NoteContent } from './Documents';
+import { NoteContent } from './NoteContent';
+import { Name } from './Name';
 import { Icon } from './icons';
 
 function NoteEditor({
@@ -35,6 +36,10 @@ function NoteEditor({
   useEffect(() => {
     if (state.status === 'Closed') close();
   }, [state.status, close]);
+  // Lets the card grow with the draft; the card listens for this and re-measures.
+  useEffect(() => {
+    field.current?.dispatchEvent(new CustomEvent('roseboard-fit', { bubbles: true }));
+  }, [state.text]);
   const cancel = async () => {
     if (
       state.text !== state.baseline &&
@@ -49,7 +54,7 @@ function NoteEditor({
   return (
     <div className="rb-note-editor nodrag nopan nowheel" onKeyDown={(event) => event.stopPropagation()}>
       <div className="rb-note-edit-status" role="status">
-        <span>
+        <span className={state.text !== state.baseline && !busy ? 'rb-note-dirty' : ''}>
           {busy
             ? 'Saving note…'
             : state.recovered
@@ -128,6 +133,7 @@ export function CanvasNote({
   minimal: boolean;
   missing: boolean;
 }) {
+  const uid = useId();
   const [session, setSession] = useState<NoteSession>();
   const [loading, setLoading] = useState(false);
   const active = useRef(true);
@@ -150,9 +156,10 @@ export function CanvasNote({
         if (active.current) setLoading(false);
       });
   };
+  const editable = !readOnly && !missing;
   return (
     <div
-      className="rb-canvas-note nodrag nopan nowheel"
+      className={`rb-canvas-note nodrag nopan nowheel${!expanded && !session && !loading ? ' rb-canvas-note-compact' : ''}`}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onDoubleClick={(event) => {
@@ -173,8 +180,8 @@ export function CanvasNote({
           <Icon name={expanded ? 'minimize-2' : 'book-open'} />
           {expanded ? 'Collapse' : 'Read'}
         </button>
-        {expanded && !session && !readOnly && (
-          <button onClick={begin} disabled={loading || missing}>
+        {!session && editable && (
+          <button onClick={begin} disabled={loading} title="Edit this note here">
             <Icon name="pencil" />
             Edit
           </button>
@@ -198,16 +205,19 @@ export function CanvasNote({
       ) : (
         (!minimal || expanded) && (
           <div
-            className={`rb-note-preview${expanded ? ' rb-note-reading' : ''}`}
+            className={`rb-note-preview rb-fit-scroll${expanded ? ' rb-note-reading' : ''}`}
             tabIndex={0}
-            aria-label={`Read ${path}`}
+            aria-labelledby={`${uid}-reader`}
           >
-            <NoteContent host={host} path={path} compact={!expanded} />
+            <Name id={`${uid}-reader`}>{`Read ${path}`}</Name>
+            <div className="rb-note-body">
+              <NoteContent host={host} path={path} compact={!expanded} />
+            </div>
           </div>
         )
       )}
-      {expanded && !session && !loading && !readOnly && (
-        <span className="rb-note-hint">Double-click the document to edit</span>
+      {expanded && !session && !loading && editable && (
+        <span className="rb-note-hint">Double-click the text to edit it here</span>
       )}
     </div>
   );

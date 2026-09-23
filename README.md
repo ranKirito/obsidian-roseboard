@@ -2,27 +2,35 @@
 
 A local-first visual task canvas for Obsidian. Charcoal surfaces, restrained rose accents, a full-pane working space, and plain Markdown as the source of truth.
 
-**Version 1.4.1.** The plugin is installable on desktop and mobile (`isDesktopOnly: false`), uses no Node/Electron APIs at runtime, and bundles its assets. Actual device testing is documented in [the test report](docs/TEST-REPORT.md); mobile-capable does not mean Android-verified.
+**Version 1.5.0.** The plugin is installable on desktop and mobile (`isDesktopOnly: false`), uses no Node/Electron APIs at runtime, and bundles its assets. Actual device testing is documented in [the test report](docs/TEST-REPORT.md); mobile-capable does not mean Android-verified.
 
 ![Read documents directly on the Roseboard canvas](docs/roseboard-canvas-reader.png)
 
-**[Download 1.4.1](https://github.com/ranKirito/obsidian-roseboard/releases/tag/1.4.1)** · **[Report a bug or suggest an improvement](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose)**
+**[Download 1.5.0](https://github.com/ranKirito/obsidian-roseboard/releases/tag/1.5.0)** · **[Report a bug or suggest an improvement](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose)**
 
-Version 1.4.1 is the only supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) is live: choose **Add to Obsidian**, then install and enable Roseboard. Manual installation is available below.
+Version 1.5.0 is the supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) is live: choose **Add to Obsidian**, then install and enable Roseboard. Manual installation is available below.
+
+## What is new in 1.5
+
+- **Checklists on cards.** Task cards list their checklist steps with checkboxes you can tick on the canvas. Cards grow to fit their steps; the size you set stays the minimum.
+- **A new Day page with routines.** A week strip, a Tasks card for the day, and **Routines** kept separate from one-off tasks. Routines repeat on the weekdays you choose, tick off per day, and keep a streak. Drag tasks between the day, the Unscheduled tray and any day of the week.
+- **Resize from any edge.** Hover a card's edge or corner and drag, no selection needed. The dots in the middle of each edge still start connections.
+- **Tasks from anywhere land on the canvas.** Tasks added in Day, Calendar or Kanban get a card in the first free spot, without covering or moving other cards.
+- **Roomier checklist editing** in the inspector, and a selection bar that stays clear of the zoom controls on narrow panes. See the [changelog](CHANGELOG.md).
 
 ## What is new in 1.4
 
 - **A quieter workspace.** Switch views beside the board title. Search and filters open when needed. **New** adds tasks, sticky notes, documents and frames; **•••** holds Undo/Redo, Unplaced, Activity, source and export. The floating canvas palette keeps drawing and creation tools within reach. **Canvas options** beside zoom holds grid, minimap and input preferences.
-- **Read on the canvas.** Click **Read** on a note card, or the note link on a task. The card expands a little and scrolls independently. **Collapse** returns its original size. Reading does not move cards, save temporary sizes, or switch to another view.
-- **Edit where you read.** Double-click the document's content, or choose **Edit**. Edit the full Markdown, including properties, then **Save note** or **⌘/Ctrl+Enter**. Cancel asks before discarding changes. Shared note drafts survive changing views; click Edit again to resume. The editor saves to the original note, separately from board undo.
+- **Read on the canvas.** Click **Read** on a note card, or the note link on a task. The card widens and grows to fit the document (long notes scroll inside it). **Collapse** returns its original size. Reading does not move cards, save temporary sizes, or switch to another view.
+- **Edit where you read.** Choose **Edit** on any document card, or double-click the document's content. The card grows as you type. Edit the full Markdown, including properties, then **Save note** or **⌘/Ctrl+Enter**. Cancel asks before discarding changes. Shared note drafts survive changing views; click Edit again to resume. The editor saves to the original note, separately from board undo.
 - **Protected note saves.** If the original changes elsewhere, saving stops and keeps your draft. **Save a copy** creates a separate recovered note; Cancel discards only the draft and shows the current original. Notes open in source editors, notes containing Roseboard blocks, and notes over 100,000 characters are edited through Obsidian instead.
 
 [Design research and UI decisions](docs/UI-RESEARCH.md) · [Verification](docs/TEST-REPORT.md)
 
 ## Also included from 1.3
 
-- **Documents in the board.** Vault-note cards show live Markdown previews. **Documents** gathers the notes linked by cards and tasks into a searchable library with a full reader. The inspector previews a task's linked note too. Tables, checklists and wiki links render, explicit relative Markdown links resolve from the document, and changes to the original refresh the preview. Use the card editor for Markdown changes, or **Open in Obsidian** for the full host editor.
-- **Day.** Quick capture, completion progress, overdue work and an Unscheduled tray. Add tasks for a day, plan an undated task, or use its **Reschedule** menu for today, tomorrow, the selected day or no date. New daily tasks start without canvas cards; use **Unplaced** when you want to place them.
+- **Documents in the board.** Vault-note cards show live Markdown previews. The inspector previews a task's linked note too, and **Read on canvas** opens it on its card. (The separate Documents library view was removed in 1.5.) Tables, checklists and wiki links render, explicit relative Markdown links resolve from the document, and changes to the original refresh the preview. Use the card editor for Markdown changes, or **Open in Obsidian** for the full host editor.
+- **Day.** Quick capture, completion progress, overdue work and an Unscheduled tray. Add tasks for a day, plan an undated task, or use its **Reschedule** menu for today, tomorrow, the selected day or no date. (Redesigned in 1.5, with routines; see above.) New daily tasks also get a canvas card in the first free spot near your existing work.
 - **Calendar.** A Monday-first month view over the same task due dates. Select a day for its agenda, navigate months, or drag a task to another date. Scheduling keeps canvas positions and supports Undo.
 - **Task ownership.** Assign tasks to a person or team in the inspector. Assignees appear on cards and task views, are included in search, and can be filtered with **Everyone / Unassigned / person**. They merge and remain reviewable like other task fields. Ownership is independent of the device name used for edit attribution.
 
@@ -40,9 +48,9 @@ Day and Calendar use the board's timezone and existing due dates. Filters apply 
 - **Kanban.** A third view over the same task records. Dragging a card between columns changes only its status; canvas positions are untouched. The List view can now be sorted.
 - **Performance.** Unchanged cards keep their React Flow objects between renders; viewport culling switches on automatically for large boards; recovery drafts are written once per burst of edits instead of once per keystroke.
 
-## Install 1.4.1
+## Install 1.5.0
 
-1. Download **[roseboard-1.4.1.zip](https://github.com/ranKirito/obsidian-roseboard/releases/download/1.4.1/roseboard-1.4.1.zip)**. Start with a test vault; back up your existing plugin folder before upgrading a vault you use daily.
+1. Download **[roseboard-1.5.0.zip](https://github.com/ranKirito/obsidian-roseboard/releases/download/1.5.0/roseboard-1.5.0.zip)**. Start with a test vault; back up your existing plugin folder before upgrading a vault you use daily.
 2. Extract the ZIP and copy its `roseboard` folder into `<vault>/.obsidian/plugins/`. The folder should contain `main.js`, `manifest.json`, and `styles.css`, plus license files.
 3. In the test vault, open **Settings → Community plugins**, enable community plugins, then enable **Roseboard**. Reload Obsidian if it was running while the files were copied.
 4. Optionally download the [welcome board](examples/Welcome%20to%20Roseboard.md) and [sample note](examples/Project%20notes.md) into your test vault to explore the features.
@@ -120,7 +128,7 @@ Integration test setup on macOS with Obsidian installed:
 node scripts/launch-test-vault.mjs
 npm run test:obsidian
 node scripts/reload-test-vault.mjs   # after a rebuild, refresh the running test instance
-node scripts/test-planner-obsidian.mjs  # document, planner and assignee acceptance checks
+node scripts/test-planner-obsidian.mjs  # canvas document, planner and assignee acceptance checks
 ```
 
 The launcher creates a temporary vault and separate profile and starts a separate Obsidian process with debugging bound to localhost port 19287. It writes only the temporary vault/profile and `.test-runtime/runtime.json`. It neither reads nor changes your normal Obsidian profile. The test driver reads that runtime file and refuses to target another vault. Close the test process after use; the generated test vault may be retained for inspection or deleted.

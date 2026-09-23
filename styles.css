@@ -688,6 +688,10 @@
 .roseboard-root * {
   box-sizing: border-box;
 }
+/* Region names for assistive technology (see Name.tsx) must never take up space. */
+.roseboard-root [hidden] {
+  display: none !important;
+}
 .roseboard-root .rb-icon {
   display: inline-flex;
   width: var(--icon-size);
@@ -1092,6 +1096,12 @@
 .roseboard-root .rb-tool-dock .rb-divider {
   margin: 0 4px;
 }
+/* Undo and redo stay in the board menu and on ⌘/Ctrl+Z when a phone-width dock has no room. */
+@container rb-canvas (max-width: 420px) {
+  .roseboard-root .rb-tool-dock .rb-dock-history {
+    display: none;
+  }
+}
 .roseboard-root .rb-tool-tip {
   position: absolute;
   top: calc(100% + 12px);
@@ -1117,6 +1127,9 @@
   min-height: 0;
   position: relative;
   overflow: hidden;
+  /* Floating controls respond to the canvas width, which shrinks when the inspector opens. */
+  container: rb-canvas / inline-size;
+  --rb-float-bottom: 18px;
 }
 .roseboard-root.rb-hand .react-flow__pane {
   cursor: grab;
@@ -1341,6 +1354,58 @@
   gap: 4px;
   --icon-size: 12px;
 }
+.roseboard-root .rb-card-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d9d9e2;
+}
+.roseboard-root .rb-card-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.roseboard-root .rb-card-checklist li > span {
+  padding-top: 2px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.roseboard-root .rb-card-checklist li.is-done > span {
+  color: var(--rb-faint);
+  text-decoration: line-through;
+  text-decoration-color: #5a5a66;
+}
+/* The step box sits in the same 22px column as the task's completion circle above it. */
+.roseboard-root .rb-card-check {
+  flex-shrink: 0;
+  width: 22px;
+  min-width: 22px;
+  min-height: 21px;
+  height: 21px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rb-faint);
+  --icon-size: 15px;
+}
+.roseboard-root .rb-card-check:hover {
+  background: transparent;
+  color: var(--rb-pink-soft);
+}
+.roseboard-root .is-done > .rb-card-check {
+  color: var(--rb-mint);
+}
+.roseboard-root .rb-card-check-more {
+  padding-left: 30px;
+  font-size: 11px;
+  color: var(--rb-faint);
+}
 .roseboard-root .rb-overdue {
   color: var(--rb-rose-soft);
 }
@@ -1546,14 +1611,77 @@
 .roseboard-root .react-flow__handle-bottom:hover {
   transform: translate(-50%, 50%) scale(1.25);
 }
+/*
+ * Resizing works from every edge and corner of an editable card. Edge zones are about 10 screen
+ * pixels wide at any zoom and show a line on hover. Connection dots at the edge midpoints sit
+ * above them, so dragging from a dot still connects or creates a linked task.
+ */
 .roseboard-root .react-flow__resize-control {
-  border-color: var(--rb-pink);
-  background-color: var(--rb-pink);
+  z-index: 2;
+}
+.roseboard-root .react-flow__resize-control.line {
+  --rb-edge: clamp(6px, calc(10px / var(--rb-zoom, 1)), 28px);
+  border: 0;
+  background: transparent;
+}
+.roseboard-root .react-flow__resize-control.line.left,
+.roseboard-root .react-flow__resize-control.line.right {
+  width: var(--rb-edge);
+}
+.roseboard-root .react-flow__resize-control.line.top,
+.roseboard-root .react-flow__resize-control.line.bottom {
+  height: var(--rb-edge);
+}
+.roseboard-root .react-flow__resize-control.line::after {
+  content: '';
+  position: absolute;
+  background: var(--rb-pink);
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+.roseboard-root .react-flow__resize-control.line.left::after,
+.roseboard-root .react-flow__resize-control.line.right::after {
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+}
+.roseboard-root .react-flow__resize-control.line.top::after,
+.roseboard-root .react-flow__resize-control.line.bottom::after {
+  left: 0;
+  right: 0;
+  top: calc(50% - 1px);
+  height: 2px;
+}
+.roseboard-root .react-flow__resize-control.line:hover::after,
+.roseboard-root .react-flow__node-card.selected .react-flow__resize-control.line::after {
+  opacity: 0.55;
+}
+.roseboard-root .react-flow__resize-control.line:hover::after {
+  opacity: 1;
 }
 .roseboard-root .react-flow__resize-control.handle {
   width: 10px;
   height: 10px;
   border-radius: 3px;
+  border-color: var(--rb-pink);
+  background-color: var(--rb-pink);
+  opacity: 0;
+  transition: opacity 100ms ease;
+}
+.roseboard-root .react-flow__node-card:hover .react-flow__resize-control.handle,
+.roseboard-root .react-flow__node-card.selected .react-flow__resize-control.handle {
+  opacity: 1;
+}
+/* Connection dots win over resize zones and get a forgiving hit area. */
+.roseboard-root .react-flow__handle {
+  z-index: 3;
+}
+.roseboard-root .react-flow__handle::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
 }
 /* ---------- Edges ---------- */
 .roseboard-root .react-flow__edge.rb-relation .react-flow__edge-path {
@@ -1675,36 +1803,72 @@
   z-index: 5;
 }
 .roseboard-root .rb-navigation {
-  bottom: 18px;
+  bottom: var(--rb-float-bottom);
   left: 16px;
 }
-.roseboard-root .rb-navigation button,
-.roseboard-root .rb-selectionbar button {
+.roseboard-root .rb-navigation > button,
+.roseboard-root .rb-selectionbar > button {
   border: 0;
   background: transparent;
   padding: 5px 8px;
   min-width: 32px;
   min-height: 30px;
 }
-.roseboard-root .rb-navigation button:hover,
-.roseboard-root .rb-selectionbar button:hover {
+.roseboard-root .rb-navigation > button:hover,
+.roseboard-root .rb-selectionbar > button:hover {
   background: #303039;
 }
 .roseboard-root .rb-navigation button.is-active {
   background: #31232d;
 }
 .roseboard-root .rb-selectionbar {
-  bottom: 18px;
+  bottom: var(--rb-float-bottom);
   left: 50%;
   transform: translateX(-50%);
   gap: 4px;
   padding: 4px 6px;
+  max-width: calc(100% - 32px);
 }
-.roseboard-root .rb-selectionbar > span:first-child {
+.roseboard-root .rb-selection-count {
   font-size: 11px;
   color: var(--rb-muted);
-  padding: 0 8px;
+  padding: 0 6px 0 8px;
   white-space: nowrap;
+}
+.roseboard-root .rb-selectionbar .rb-swatches {
+  flex-wrap: nowrap;
+  padding: 0 6px;
+  margin-right: 2px;
+  border-right: 1px solid var(--rb-border);
+}
+/*
+ * Navigation sits bottom-left and is about 290px wide. Centred selection actions would run into it
+ * on narrower canvases, so they move right, then stack above it with icon-only buttons.
+ */
+@container rb-canvas (max-width: 1180px) {
+  .roseboard-root .rb-selectionbar {
+    left: auto;
+    right: 16px;
+    transform: none;
+    max-width: calc(100% - 340px);
+  }
+}
+@container rb-canvas (max-width: 960px) {
+  .roseboard-root .rb-selectionbar {
+    left: 16px;
+    right: auto;
+    bottom: calc(var(--rb-float-bottom) + 50px);
+    max-width: calc(100% - 32px);
+  }
+}
+@container rb-canvas (max-width: 520px) {
+  .roseboard-root .rb-selectionbar .rb-bar-label {
+    display: none;
+  }
+  .roseboard-root .rb-selectionbar {
+    left: 8px;
+    max-width: calc(100% - 16px);
+  }
 }
 .roseboard-root .rb-swatches {
   display: inline-flex;
@@ -1722,11 +1886,16 @@
   border: 2px solid transparent;
   --icon-size: 12px;
 }
+.roseboard-root .rb-swatches-mini {
+  gap: 5px;
+}
 .roseboard-root .rb-swatches-mini .rb-swatch {
   width: 18px;
   height: 18px;
   min-height: 18px;
   min-width: 18px;
+  flex-shrink: 0;
+  --icon-size: 10px;
 }
 .roseboard-root .rb-swatch.is-active,
 .roseboard-root .rb-swatch:hover {
@@ -1797,7 +1966,7 @@
 }
 /* ---------- Inspector & activity ---------- */
 .roseboard-root .rb-inspector {
-  width: 312px;
+  width: 340px;
   flex-shrink: 0;
   background: var(--rb-card);
   border-left: 1px solid var(--rb-border);
@@ -1916,34 +2085,48 @@
 }
 .roseboard-root .rb-check-item {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  gap: 8px;
+  align-items: flex-start;
 }
+/* Controls are centred on the first text line (38px field: 9px padding + 20px line). */
 .roseboard-root .rb-check-item input[type='checkbox'] {
   appearance: auto;
   width: 16px;
   height: 16px;
   min-height: 0;
+  margin: 11px 3px 0;
   flex-shrink: 0;
   accent-color: var(--rb-pink);
 }
-.roseboard-root .rb-check-item input[type='text'],
-.roseboard-root .rb-check-item input:not([type]) {
-  width: 100%;
+.roseboard-root .rb-check-item .rb-growing {
+  flex: 1;
+  width: auto;
   min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 20px;
+  resize: none;
+  overflow: hidden;
 }
-.roseboard-root .rb-check-item input.rb-struck {
+.roseboard-root .rb-check-item .rb-growing.rb-struck {
   text-decoration: line-through;
   color: var(--rb-muted);
+}
+.roseboard-root .rb-check-item > button {
+  flex-shrink: 0;
+  min-height: 38px;
 }
 .roseboard-root .rb-check-item .rb-icon-button {
   border: 0;
   padding: 4px;
-  min-width: 26px;
+  min-width: 30px;
+  background: transparent;
+  color: var(--rb-muted);
 }
-.roseboard-root .rb-check-new .rb-icon {
+.roseboard-root .rb-check-new > .rb-icon {
   color: var(--rb-faint);
-  margin: 0 3px;
+  margin: 12px 4px 0;
 }
 .roseboard-root .rb-dependency {
   display: flex;
@@ -2073,13 +2256,25 @@
   color: var(--rb-text);
 }
 .roseboard-root .rb-list-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 118px 84px 92px 84px;
   align-items: center;
-  gap: 14px;
+  column-gap: 14px;
   border-bottom: 1px solid var(--rb-border);
   padding: 10px 8px;
   font-size: 12px;
   border-radius: var(--rb-radius-sm);
+}
+/* Facts are grid cells on wide panes so statuses, priorities and dates line up in columns. */
+.roseboard-root .rb-list-facts {
+  display: contents;
+}
+.roseboard-root .rb-list-status {
+  display: flex;
+  min-width: 0;
+}
+.roseboard-root .rb-list-action {
+  justify-self: stretch;
 }
 .roseboard-root .rb-list-row:hover {
   background: #ffffff05;
@@ -2089,8 +2284,8 @@
   border-color: #7d4466;
 }
 .roseboard-root .rb-list-title {
-  flex: 1;
-  min-width: 100px;
+  min-width: 0;
+  padding-left: 0;
   white-space: normal;
   text-align: left;
   background: none;
@@ -2112,12 +2307,11 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  width: 70px;
   --icon-size: 12px;
 }
 .roseboard-root .rb-list-due {
-  width: 84px;
   color: var(--rb-muted);
+  white-space: nowrap;
 }
 .roseboard-root .rb-list-due.rb-overdue {
   color: var(--rb-rose-soft);
@@ -2292,27 +2486,7 @@
   font-weight: 650;
   color: var(--rb-pink-soft);
 }
-.roseboard-root .rb-feature-empty {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  text-align: center;
-}
-.roseboard-root .rb-feature-empty > .rb-icon {
-  --icon-size: 36px;
-  color: var(--rb-pink-soft);
-}
-.roseboard-root .rb-feature-empty p {
-  color: var(--rb-muted);
-  max-width: 320px;
-}
-.roseboard-root .rb-card-note {
-  display: flex;
-  flex-direction: column;
-}
+
 .roseboard-root .rb-canvas-note {
   display: flex;
   flex-direction: column;
@@ -2342,12 +2516,24 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 10px 4px 4px;
+  padding: 10px 0 4px;
   border-top: 1px solid var(--rb-border);
   overscroll-behavior: contain;
   cursor: text;
   user-select: text;
   -webkit-user-select: text;
+}
+.roseboard-root .rb-note-body {
+  display: flow-root;
+}
+.roseboard-root .rb-canvas-note-compact {
+  container: rb-note / size;
+}
+/* A short collapsed card keeps its actions instead of showing a sliver of the document. */
+@container rb-note (max-height: 80px) {
+  .roseboard-root .rb-canvas-note-compact .rb-note-preview {
+    display: none;
+  }
 }
 .roseboard-root .rb-note-preview .rb-markdown {
   max-height: none;
@@ -2382,9 +2568,10 @@
   width: 100%;
   resize: none;
   line-height: 1.65;
-  padding: 12px;
+  padding: 12px 14px;
   font-family: var(--font-monospace), monospace;
-  font-size: 12px;
+  font-size: 12.5px;
+  background: var(--rb-bg);
   user-select: text;
   overscroll-behavior: contain;
 }
@@ -2392,8 +2579,11 @@
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--rb-muted);
+}
+.roseboard-root .rb-note-dirty {
+  color: var(--rb-amber);
 }
 .roseboard-root .rb-note-edit-actions button {
   min-height: 30px;
@@ -2406,111 +2596,7 @@
   max-height: 80px;
   overflow: auto;
 }
-.roseboard-root .rb-documents {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-.roseboard-root .rb-document-library {
-  width: 264px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 24px 16px;
-  border-right: 1px solid var(--rb-border);
-  background: var(--rb-card);
-  min-height: 0;
-}
-.roseboard-root .rb-document-library h2 {
-  font-size: 18px;
-  margin: 8px 0 4px;
-}
-.roseboard-root .rb-document-library h2 span {
-  color: var(--rb-muted);
-  font-weight: 400;
-  margin-left: 6px;
-  font-size: 13px;
-}
-.roseboard-root .rb-document-library nav {
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.roseboard-root .rb-document-item {
-  justify-content: flex-start;
-  align-items: flex-start;
-  padding: 12px;
-  text-align: left;
-  width: 100%;
-  height: auto;
-  min-height: 76px;
-  flex-shrink: 0;
-  border-color: transparent;
-  background: transparent;
-}
-.roseboard-root .rb-document-item > .rb-icon {
-  margin-top: 3px;
-}
-.roseboard-root .rb-document-item > span {
-  min-width: 0;
-}
-.roseboard-root .rb-document-item strong,
-.roseboard-root .rb-document-item small {
-  display: block;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.roseboard-root .rb-document-item small {
-  font-size: 10px;
-  color: var(--rb-muted);
-  margin-top: 4px;
-}
-.roseboard-root .rb-document-reader {
-  min-width: 0;
-  flex: 1;
-  overflow: auto;
-}
-.roseboard-root .rb-document-reader > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 30px clamp(20px, 4vw, 60px);
-  border-bottom: 1px solid var(--rb-border);
-}
-.roseboard-root .rb-document-reader h2 {
-  margin: 6px 0;
-  font-size: 23px;
-}
-.roseboard-root .rb-document-reader .rb-path {
-  overflow-wrap: anywhere;
-}
-.roseboard-root .rb-document-page {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 32px clamp(20px, 4vw, 60px) 80px;
-}
-.roseboard-root .rb-document-page .rb-markdown {
-  font-size: 15px;
-  line-height: 1.8;
-  color: var(--rb-text);
-}
-.roseboard-root .rb-document-page .rb-markdown h1 {
-  font-size: 28px;
-}
-.roseboard-root .rb-document-page .rb-markdown h2 {
-  font-size: 23px;
-}
-.roseboard-root .rb-document-page .rb-markdown h3 {
-  font-size: 18px;
-}
-.roseboard-root .rb-document-page .rb-markdown p {
-  margin: 12px 0;
-}
+
 .roseboard-root .rb-markdown table {
   border-collapse: collapse;
   width: 100%;
@@ -2540,36 +2626,46 @@
   border-left: 2px solid var(--rb-pink-soft);
   color: var(--rb-muted);
 }
+/* ---------- Planning: Day and Calendar ---------- */
 .roseboard-root .rb-planner {
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 28px clamp(16px, 3vw, 42px) 40px;
+  container: rb-planner / inline-size;
+  /* Content keeps a readable measure on wide panes; the scroll area stays full width. */
+  padding: 26px max(clamp(16px, 3vw, 40px), calc((100% - 1180px) / 2)) 48px;
 }
+.roseboard-root .rb-day-header,
 .roseboard-root .rb-planner-heading {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px 24px;
   flex-wrap: wrap;
-  margin-bottom: 26px;
+  margin-bottom: 20px;
 }
+.roseboard-root .rb-day-title h1,
 .roseboard-root .rb-planner-heading h1 {
-  font-size: 26px;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-  margin: 5px 0 8px;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  font-weight: 650;
+  margin: 6px 0;
 }
+.roseboard-root .rb-day-title p,
 .roseboard-root .rb-planner-heading p {
-  color: var(--rb-muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
   margin: 0;
-  font-size: 12px;
+  color: var(--rb-muted);
+  font-size: 12.5px;
 }
+.roseboard-root .rb-day-zone,
 .roseboard-root .rb-planner-heading p span {
-  display: block;
-  font-size: 10px;
   color: var(--rb-faint);
-  margin-top: 5px;
+  font-size: 11px;
 }
 .roseboard-root .rb-date-navigation {
   display: flex;
@@ -2578,47 +2674,158 @@
   flex-wrap: wrap;
 }
 .roseboard-root .rb-date-navigation input {
-  margin-left: 5px;
+  margin-left: 4px;
 }
-.roseboard-root .rb-planner-layout {
+/* Week strip */
+.roseboard-root .rb-week {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(280px, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.roseboard-root .rb-week-day {
+  flex-direction: column;
+  gap: 3px;
+  min-height: 70px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: var(--rb-card);
+}
+.roseboard-root .rb-week-name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-week-day strong {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.roseboard-root .rb-week-marks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 14px;
+}
+.roseboard-root .rb-week-count {
+  min-width: 16px;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: #f472b626;
+  color: var(--rb-pink-soft);
+  font-size: 10px;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.roseboard-root .rb-week-ring {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rb-mint);
+  opacity: 0.7;
+}
+.roseboard-root .rb-week-ring.is-complete {
+  background: var(--rb-mint);
+  opacity: 1;
+}
+.roseboard-root .rb-week-day.is-past strong {
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-week-day.is-today strong {
+  color: var(--rb-pink-soft);
+}
+.roseboard-root .rb-week-day.is-selected {
+  background: #31232d;
+  border-color: #7d4466;
+}
+.roseboard-root .rb-week-day.is-over {
+  border-color: var(--rb-pink);
+  box-shadow: 0 0 0 3px #f472b62e;
+}
+/* Cards */
+.roseboard-root .rb-day-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+  gap: 20px;
   align-items: start;
 }
+.roseboard-root .rb-day-side,
 .roseboard-root .rb-planner-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   min-width: 0;
 }
-.roseboard-root .rb-day-agenda {
-  padding: 24px;
+.roseboard-root .rb-day-card {
+  min-width: 0;
+  padding: 18px 20px 20px;
   border: 1px solid var(--rb-border);
   border-radius: 16px;
   background: var(--rb-card);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.roseboard-root .rb-day-card.is-over {
+  border-color: var(--rb-pink);
+  box-shadow: 0 0 0 4px #f472b61f;
+}
+.roseboard-root .rb-day-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.roseboard-root .rb-day-card-head > div {
+  flex: 1;
   min-width: 0;
 }
-.roseboard-root .rb-agenda-heading {
-  display: flex;
-  gap: 8px;
-  justify-content: space-between;
+.roseboard-root .rb-day-card-icon {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--rb-raised);
+  color: var(--rb-pink-soft);
+  --icon-size: 16px;
 }
-.roseboard-root .rb-agenda-heading h2 {
-  margin: 3px 0 0;
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.roseboard-root .rb-routine-icon {
+  color: var(--rb-mint);
 }
-.roseboard-root .rb-agenda-heading > span {
-  font-size: 11px;
+.roseboard-root .rb-day-card-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 620;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.roseboard-root .rb-day-card-head p {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-day-count {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--rb-raised);
+  color: var(--rb-muted);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
 }
 .roseboard-root .rb-day-progress {
   display: block;
   width: 100%;
   height: 4px;
-  margin: 18px 0 22px;
+  margin: 14px 0;
   appearance: none;
   border: 0;
   border-radius: 4px;
@@ -2628,20 +2835,26 @@
   background: var(--rb-raised);
 }
 .roseboard-root .rb-day-progress::-webkit-progress-value {
+  background: var(--rb-pink);
+  border-radius: 4px;
+}
+.roseboard-root .rb-routine-progress::-webkit-progress-value {
   background: var(--rb-mint);
 }
 .roseboard-root .rb-planner-composer {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px;
+  padding: 4px 4px 4px 10px;
   border: 1px solid var(--rb-border);
   border-radius: 10px;
   background: var(--rb-bg);
-  margin-bottom: 18px;
+  margin-bottom: 8px;
+}
+.roseboard-root .rb-planner-composer:focus-within {
+  border-color: #7d4466;
 }
 .roseboard-root .rb-planner-composer > .rb-icon {
-  margin-left: 6px;
   color: var(--rb-muted);
 }
 .roseboard-root .rb-planner-composer input {
@@ -2650,96 +2863,248 @@
   padding-left: 0;
   border-color: transparent;
   background: transparent;
+  box-shadow: none;
+}
+.roseboard-root .rb-planner-composer button {
+  min-height: 30px;
+  padding: 3px 12px;
+}
+/* Task rows */
+.roseboard-root .rb-agenda-rows {
+  display: flex;
+  flex-direction: column;
 }
 .roseboard-root .rb-agenda-task {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--rb-border);
+  gap: 8px;
+  padding: 8px 4px 8px 6px;
+  border-radius: 10px;
 }
-.roseboard-root .rb-agenda-task:last-child {
-  border-bottom: 0;
+.roseboard-root .rb-agenda-task + .rb-agenda-task::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 36px;
+  right: 6px;
+  height: 1px;
+  background: #26262e;
+}
+.roseboard-root .rb-agenda-task:hover {
+  background: #ffffff07;
+}
+.roseboard-root .rb-agenda-task.is-active {
+  background: #f472b612;
+}
+.roseboard-root .rb-agenda-task.is-dragging {
+  opacity: 0.4;
+}
+.roseboard-root .rb-agenda-task[draggable='true'] {
+  cursor: grab;
+}
+/* The grip hangs in the card's padding so the completion circles line up with the composer. */
+.roseboard-root .rb-grip {
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  translate: 0 -50%;
+  display: inline-flex;
+  width: 14px;
+  color: var(--rb-faint);
+  opacity: 0;
+  --icon-size: 14px;
+  transition: opacity 100ms ease;
+}
+.roseboard-root .rb-agenda-task:hover .rb-grip {
+  opacity: 1;
 }
 .roseboard-root .rb-agenda-title {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  flex: 1;
-  min-width: 0;
-  white-space: normal;
-  background: transparent;
-  border: 0;
-  text-align: left;
+  gap: 2px;
   padding: 2px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  white-space: normal;
+}
+/* The whole row carries hover; the title button must not draw its own box. */
+.roseboard-root .rb-agenda-title:hover,
+.roseboard-root .rb-agenda-title:active {
+  background: transparent;
 }
 .roseboard-root .rb-agenda-title strong {
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 520;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
-.roseboard-root .rb-agenda-title > span {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.roseboard-root .rb-done .rb-agenda-title strong {
   color: var(--rb-muted);
-  font-size: 10px;
-  margin-top: 4px;
+  text-decoration: line-through;
+  text-decoration-color: #5a5a66;
+}
+.roseboard-root .rb-agenda-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-agenda-doing {
+  color: var(--rb-pink-soft);
+}
+.roseboard-root .rb-row-menu {
+  flex-shrink: 0;
+  min-width: 30px;
+  min-height: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--rb-muted);
+}
+.roseboard-root .rb-plan-button {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 3px 9px;
+  font-size: 11.5px;
 }
 .roseboard-root .rb-planner-empty {
+  margin-top: 6px;
+  padding: 26px 12px 20px;
+  border: 1px dashed #2c2c35;
+  border-radius: 12px;
   text-align: center;
   color: var(--rb-muted);
-  padding: 35px 10px;
 }
 .roseboard-root .rb-planner-empty > .rb-icon {
-  --icon-size: 26px;
+  --icon-size: 22px;
   color: var(--rb-amber);
 }
 .roseboard-root .rb-planner-empty h3 {
+  margin: 10px 0 4px;
+  font-size: 14px;
   color: var(--rb-text);
-  font-size: 15px;
-  margin: 12px 0 5px;
 }
 .roseboard-root .rb-planner-empty p {
-  font-size: 12px;
   max-width: 280px;
   margin: 0 auto;
+  font-size: 12px;
 }
 .roseboard-root .rb-overdue-section {
-  margin-top: 24px;
+  margin-top: 18px;
+  padding-top: 14px;
   border-top: 1px solid var(--rb-border);
-  padding-top: 18px;
 }
 .roseboard-root .rb-overdue-section h3 {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--rb-rose-soft);
+  margin: 0 0 4px;
   font-size: 13px;
-  margin: 0 0 8px;
+  color: var(--rb-rose-soft);
 }
-.roseboard-root .rb-unscheduled {
-  padding: 22px;
-  border: 1px solid var(--rb-border);
-  border-radius: 16px;
+.roseboard-root .rb-overdue-section h3 > span {
+  color: var(--rb-muted);
+  font-weight: 400;
 }
-.roseboard-root .rb-unscheduled > header {
+.roseboard-root .rb-text-button {
+  margin-left: auto;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--rb-pink-soft);
+  font-size: 11.5px;
+}
+.roseboard-root .rb-day-note {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+/* Routines */
+.roseboard-root .rb-routine-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.roseboard-root .rb-routine {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 6px 4px 6px 2px;
+  border-radius: 10px;
 }
-.roseboard-root .rb-unscheduled h3 {
-  font-size: 14px;
-  margin: 0;
+.roseboard-root .rb-routine:hover {
+  background: #ffffff07;
+}
+.roseboard-root .rb-routine-check {
+  flex-shrink: 0;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 1.5px solid #4a4a56;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rb-faint);
+  --icon-size: 13px;
+}
+.roseboard-root .rb-routine-check:hover:not(:disabled) {
+  border-color: var(--rb-mint);
+  color: var(--rb-mint);
+  background: transparent;
+}
+.roseboard-root .rb-routine.is-done .rb-routine-check {
+  border-color: var(--rb-mint);
+  background: var(--rb-mint);
+  color: #10231a;
+}
+.roseboard-root .rb-routine-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
-.roseboard-root .rb-unscheduled > header > span {
+.roseboard-root .rb-routine-text strong {
+  font-size: 13px;
+  font-weight: 520;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.roseboard-root .rb-routine.is-done .rb-routine-text strong {
   color: var(--rb-muted);
-  font-size: 11px;
+  text-decoration: line-through;
+  text-decoration-color: #5a5a66;
 }
-.roseboard-root .rb-unscheduled > p {
-  font-size: 11px;
+.roseboard-root .rb-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--rb-amber);
+  font-variant-numeric: tabular-nums;
+  --icon-size: 11px;
 }
+.roseboard-root .rb-routine-rename {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+}
+.roseboard-root .rb-routine-composer {
+  margin: 10px 0 0;
+}
+/* Month calendar */
 .roseboard-root .rb-calendar {
   min-width: 0;
 }
@@ -2832,63 +3197,67 @@
   font-size: 11px;
   margin: 14px 0;
 }
-.roseboard-root .rb-planner-calendar .rb-day-agenda {
-  padding: 18px;
+.roseboard-root .rb-calendar-day {
+  min-height: 90px;
+  padding: 2px;
 }
-.roseboard-root .rb-planner-calendar .rb-agenda-heading h2 {
-  font-size: 19px;
-}
-.roseboard-root .rb-planner-calendar .rb-agenda-task {
-  gap: 6px;
-}
-.roseboard-root .rb-planner-calendar .rb-agenda-task > .rb-chip {
+.roseboard-root .rb-calendar-date small {
   display: none;
 }
-.roseboard-root .rb-planner-calendar .rb-planner-composer > .rb-icon {
+.roseboard-root .rb-calendar-task {
+  font-size: 9px;
+}
+.roseboard-root .rb-planner-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(290px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.roseboard-root .rb-planner-calendar .rb-agenda-task .rb-grip {
   display: none;
 }
-@container (max-width: 1150px) {
-  .roseboard-root .rb-planner-calendar .rb-planner-layout {
-    grid-template-columns: 1fr;
+/* The planner queries its own width, which already excludes an open inspector. */
+@container rb-planner (max-width: 900px) {
+  .roseboard-root .rb-day-grid,
+  .roseboard-root .rb-planner-layout {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .roseboard-root .rb-planner-calendar .rb-planner-sidebar {
+  .roseboard-root .rb-day-side,
+  .roseboard-root .rb-planner-sidebar {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
   }
 }
-@container (max-width: 750px) {
-  .roseboard-root .rb-planner-layout,
-  .roseboard-root .rb-planner-calendar .rb-planner-sidebar {
-    grid-template-columns: 1fr;
+@container rb-planner (max-width: 620px) {
+  .roseboard-root .rb-day-side,
+  .roseboard-root .rb-planner-sidebar {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .roseboard-root .rb-documents {
-    flex-direction: column;
-    overflow: auto;
+  .roseboard-root .rb-day-title h1,
+  .roseboard-root .rb-planner-heading h1 {
+    font-size: 25px;
   }
-  .roseboard-root .rb-document-library {
-    width: auto;
-    flex-shrink: 0;
-    max-height: 250px;
-    border-right: 0;
-    border-bottom: 1px solid var(--rb-border);
-    padding: 16px;
+  .roseboard-root .rb-week {
+    gap: 3px;
   }
-  .roseboard-root .rb-document-library nav {
-    flex-direction: row;
-    flex-shrink: 0;
-    overflow-x: auto;
+  .roseboard-root .rb-week-day {
+    min-height: 60px;
+    padding: 6px 2px;
+    border-radius: 10px;
   }
-  .roseboard-root .rb-document-item {
-    width: 200px;
-    flex-shrink: 0;
+  .roseboard-root .rb-week-name {
+    font-size: 9px;
+    letter-spacing: 0.02em;
   }
-  .roseboard-root .rb-document-reader {
-    flex-shrink: 0;
-    overflow: visible;
+  .roseboard-root .rb-week-day strong {
+    font-size: 15px;
   }
-  .roseboard-root .rb-document-reader > header {
-    flex-wrap: wrap;
-    padding: 20px;
+  .roseboard-root .rb-day-card {
+    padding: 16px 14px;
+  }
+  .roseboard-root .rb-grip {
+    display: none;
   }
   .roseboard-root .rb-calendar-day {
     min-height: 90px;
@@ -2899,9 +3268,6 @@
   }
   .roseboard-root .rb-calendar-task {
     font-size: 9px;
-  }
-  .roseboard-root .rb-day-agenda {
-    padding: 18px;
   }
 }
 /* ---------- Responsive ---------- */
@@ -2927,9 +3293,6 @@
   }
   .roseboard-root .rb-footer span:last-child {
     display: none;
-  }
-  .roseboard-root .rb-selectionbar {
-    bottom: 64px;
   }
 }
 @container (max-width: 600px) {
@@ -2980,11 +3343,20 @@
     top: 8px;
     max-width: calc(100% - 16px);
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .roseboard-root .rb-tool-dock::-webkit-scrollbar,
+  .roseboard-root .rb-navigation::-webkit-scrollbar,
+  .roseboard-root .rb-selectionbar::-webkit-scrollbar {
+    display: none;
   }
   .roseboard-root .rb-tool-dock button {
     flex-shrink: 0;
-    width: 36px;
+    width: 34px;
     height: 40px;
+  }
+  .roseboard-root .rb-tool-dock .rb-divider {
+    margin: 0 2px;
   }
   .roseboard-root .rb-tool-tip {
     display: none;
@@ -3000,11 +3372,23 @@
     padding: 12px;
   }
   .roseboard-root .rb-list-row {
-    gap: 8px;
-    flex-wrap: wrap;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    row-gap: 4px;
+    column-gap: 8px;
   }
-  .roseboard-root .rb-list-title {
-    flex-basis: 70%;
+  .roseboard-root .rb-list-row > .rb-complete {
+    grid-row: 1 / span 2;
+  }
+  .roseboard-root .rb-list-facts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    grid-column: 2;
+    padding-left: 10px;
+  }
+  .roseboard-root .rb-list-action {
+    grid-column: 3;
+    grid-row: 1 / span 2;
   }
   .roseboard-root .rb-list-priority {
     display: none;
@@ -3012,19 +3396,24 @@
   .roseboard-root .rb-list-heading span {
     display: none;
   }
+  .roseboard-root .rb-canvas {
+    --rb-float-bottom: 12px;
+  }
   .roseboard-root .rb-navigation {
     max-width: calc(100% - 16px);
     left: 8px;
     overflow: auto;
-    bottom: 12px;
+    scrollbar-width: none;
   }
-  .roseboard-root .rb-navigation button {
+  .roseboard-root .rb-navigation > button,
+  .roseboard-root .rb-selectionbar > button {
     padding: 4px 8px;
     min-height: 36px;
   }
   .roseboard-root .rb-selectionbar {
-    max-width: calc(100% - 16px);
-    overflow: auto;
+    bottom: calc(var(--rb-float-bottom) + 56px);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
   .roseboard-root .rb-footer {
     font-size: 9px;

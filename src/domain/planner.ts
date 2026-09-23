@@ -1,4 +1,4 @@
-import { addDays, dateOnly, type Board, type Task } from './model';
+import { ROUTINE_HISTORY, addDays, dateOnly, routinesOf, type Board, type Routine, type Task } from './model';
 
 export const monthOf = (date: string) => `${date.slice(0, 7)}-01`;
 
@@ -43,4 +43,49 @@ export function plannerTasks(board: Board, matching: Set<string>, date: string, 
     overdue: tasks.filter(([, task]) => task.status !== 'done' && task.dueDate && task.dueDate < today),
     unscheduled: tasks.filter(([, task]) => task.status !== 'done' && !task.dueDate),
   };
+}
+
+/** ISO weekday of a date-only string: 1 = Monday … 7 = Sunday. */
+export const isoWeekday = (date: string) => ((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7) + 1;
+
+/** Monday-to-Sunday week containing `date`. */
+export const weekOf = (date: string) =>
+  Array.from({ length: 7 }, (_, i) => addDays(date, i + 1 - isoWeekday(date)));
+
+export const routineOrder = (a: [string, Routine], b: [string, Routine]) =>
+  (a[1].order ?? 0) - (b[1].order ?? 0) || a[1].title.localeCompare(b[1].title) || a[0].localeCompare(b[0]);
+
+/** Routines scheduled on `date`, in display order. */
+export function routinesOn(board: Board, date: string): [string, Routine][] {
+  const day = isoWeekday(date);
+  return Object.entries(routinesOf(board))
+    .filter(([, routine]) => routine.days.includes(day))
+    .sort(routineOrder);
+}
+
+/**
+ * Consecutive scheduled days completed, counting back from `today`. An unfinished routine today
+ * does not break the streak until the day is over.
+ */
+export function streak(routine: Routine, today: string): number {
+  const done = new Set(routine.done);
+  let date = today;
+  if (routine.days.includes(isoWeekday(date)) && !done.has(date)) date = addDays(date, -1);
+  let count = 0;
+  for (let i = 0; i < ROUTINE_HISTORY; i++, date = addDays(date, -1)) {
+    if (!routine.days.includes(isoWeekday(date))) continue;
+    if (!done.has(date)) break;
+    count++;
+  }
+  return count;
+}
+
+const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/** Short human label for a routine's weekdays. */
+export function repeatLabel(days: number[]): string {
+  const set = [...new Set(days)].sort();
+  if (set.length === 7) return 'Every day';
+  if (set.join() === '1,2,3,4,5') return 'Weekdays';
+  if (set.join() === '6,7') return 'Weekends';
+  return set.map((d) => dayNames[d - 1]).join(' · ');
 }

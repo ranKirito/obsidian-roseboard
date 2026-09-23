@@ -16,7 +16,9 @@ import {
   deleteTask,
   duplicate,
   moveNodes,
+  freeSlot,
   placeAll,
+  placeTask,
   removePlacements,
   setDependency,
   History,
@@ -236,6 +238,38 @@ describe('commands and undo', () => {
     expect(n.nodes.nb).toBe(b.nodes.nb);
     const placed = Object.values(n.nodes).find((n) => n.type === 'task' && n.taskId === 'c')!;
     expect(placed.y).toBeGreaterThan(310);
+  });
+  it('places a task created outside the canvas in the first free slot, never inside a frame', () => {
+    const b = fixture();
+    b.tasks.c = newTask('From the calendar');
+    b.nodes.frame = { type: 'frame', title: 'Frame', x: 900, y: 120, width: 700, height: 500 };
+    let id: string | undefined;
+    const n = applyEdit(b, (d) => {
+      id = placeTask(d, 'c');
+    });
+    const placed = n.nodes[id!]!;
+    expect(placed).toMatchObject({ type: 'task', taskId: 'c', width: 300, height: 190 });
+    for (const [key, other] of Object.entries(b.nodes))
+      expect(
+        placed.x >= other.x + other.width ||
+          placed.x + placed.width <= other.x ||
+          placed.y >= other.y + other.height ||
+          placed.y + placed.height <= other.y,
+        `overlaps ${key}`,
+      ).toBe(true);
+    expect(n.nodes.na).toBe(b.nodes.na);
+    // Placing twice keeps the single placement.
+    const again = applyEdit(n, (d) => {
+      expect(placeTask(d, 'c')).toBe(id);
+    });
+    expect(again).toBe(n);
+  });
+  it('fills gaps before growing the board and starts empty boards at a fixed origin', () => {
+    const b = fixture();
+    expect(freeSlot({ ...b, nodes: {} })).toEqual({ x: 100, y: 100 });
+    // Row 0 has cards at columns 0 and 1 (x 100 and 500 cover 100–800); column 2 at x 780 is too close.
+    const slot = freeSlot(b);
+    expect(slot.y === 120 ? slot.x >= 840 : slot.y > 310).toBe(true);
   });
   it('undo/redo groups text changes but one completed move is one command', () => {
     const h = new History();

@@ -1,26 +1,26 @@
 {
-  "version": "1.4.0",
-  "started": "2026-09-21T15:30:08.284Z",
+  "version": "1.4.1",
+  "started": "2026-09-23T15:53:24.413Z",
   "results": [
     {
       "name": "The bundled renderer rejects script loading and script elements without network requests",
       "result": "PASS",
-      "ms": 243
+      "ms": 179
     },
     {
       "name": "Read expands in place; scrolling stays inside the document and the board source is unchanged",
       "result": "PASS",
-      "ms": 334
+      "ms": 324
     },
     {
       "name": "Double-click edits inside the card; Save preserves properties and changes only the linked note",
       "result": "PASS",
-      "ms": 128
+      "ms": 111
     },
     {
       "name": "Unsaved note edits survive view changes and plugin reload",
       "result": "PASS",
-      "ms": 387
+      "ms": 431
     },
     {
       "name": "A conflicting note update cannot be overwritten; the draft can be saved separately",
@@ -30,12 +30,12 @@
     {
       "name": "Cards of the same note share edits, and an active draft follows a file rename",
       "result": "PASS",
-      "ms": 181
+      "ms": 91
     },
     {
-      "name": "Document cards render live Markdown; library deduplicates task and card links",
+      "name": "Document cards render live Markdown safely while reading on the canvas",
       "result": "PASS",
-      "ms": 137
+      "ms": 76
     },
     {
       "name": "Reader refreshes external note edits and resolves explicit Markdown links relative to the document",
@@ -43,72 +43,82 @@
       "ms": 53
     },
     {
-      "name": "Document rename, deletion and restoration update the reader without altering note bodies",
+      "name": "Document rename, deletion and restoration update the card without altering note bodies",
       "result": "PASS",
-      "ms": 22
+      "ms": 72
     },
     {
-      "name": "Library picker links a document below existing cards, avoids duplicates and supports search",
+      "name": "Read on canvas from a planner opens the linked card in place; there is no separate reader view",
       "result": "PASS",
-      "ms": 288
+      "ms": 183
     },
     {
-      "name": "Day view captures unplaced tasks, tracks progress, and keeps overdue work separate",
+      "name": "Day view capture also places the task on the canvas, tracks progress, and keeps overdue work separate",
       "result": "PASS",
-      "ms": 187
+      "ms": 185
     },
     {
       "name": "Unscheduled planning and accessible rescheduling change only the due date and undo cleanly",
       "result": "PASS",
-      "ms": 112
+      "ms": 113
+    },
+    {
+      "name": "Day tasks move by drag and drop between Unscheduled, the day list and the week strip",
+      "result": "PASS",
+      "ms": 18208
+    },
+    {
+      "name": "Routines repeat on chosen weekdays, tick per day, keep a streak, and stay out of tasks and the canvas",
+      "result": "PASS",
+      "ms": 423
     },
     {
       "name": "Assignments are editable, searchable and filter the calendar and daily view",
       "result": "PASS",
-      "ms": 299
+      "ms": 279
     },
     {
       "name": "Calendar navigation and drag rescheduling preserve canvas positions and persist on disk",
       "result": "PASS",
-      "ms": 125
+      "ms": 128
     },
     {
       "name": "Blocked completion still requires the existing confirmation",
       "result": "PASS",
-      "ms": 89
+      "ms": 98
     },
     {
       "name": "Source editing makes planner controls read-only; they resume after the editor closes",
       "result": "PASS",
-      "ms": 193
+      "ms": 188
     },
     {
       "name": "Document and planning shortcuts never edit hidden selected canvas cards",
       "result": "PASS",
-      "ms": 281
+      "ms": 384
     },
     {
-      "name": "Narrow desktop viewport keeps Day, Calendar and Documents usable without horizontal overflow",
+      "name": "Narrow desktop viewport keeps Day, Calendar and List usable without horizontal overflow",
       "result": "PASS",
-      "ms": 247
+      "ms": 226
     },
     {
-      "name": "New in a planner uses the selected day and stays unplaced",
+      "name": "New in a planner uses the selected day and adds one card without moving others",
       "result": "PASS",
-      "ms": 189
+      "ms": 180
     },
     {
       "name": "Compact header and tool palette stay within desktop and narrow panes",
       "result": "PASS",
-      "ms": 557
+      "ms": 560
     },
     {
       "name": "Reopening preserves assignments and dates, and creates no copied document body",
       "result": "PASS",
-      "ms": 289
+      "ms": 279
     }
   ],
   "errors": [],
-  "finished": "2026-09-21T15:30:12.847Z",
+  "finished": "2026-09-23T15:53:47.382Z",
   "remoteImageRequests": []
 }

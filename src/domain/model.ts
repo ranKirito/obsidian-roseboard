@@ -92,6 +92,32 @@ export const strokeSchema = z
     ...stamp,
   })
   .passthrough();
+/** ISO weekdays: 1 = Monday … 7 = Sunday. */
+export const weekdays = [1, 2, 3, 4, 5, 6, 7] as const;
+/** Completion dates kept per routine; older dates are dropped when a newer one is added. */
+export const ROUTINE_HISTORY = 400;
+/**
+ * A repeating routine (habit) shown in Day. Routines are not tasks: no placement, status or due
+ * date, and nothing is generated from them. `done` holds the dates on which it was completed.
+ */
+export const routineSchema = z
+  .object({
+    title: z.string().min(1).max(200),
+    days: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((d) => new Set(d).size === d.length, 'Duplicate weekday')
+      .default([...weekdays]),
+    done: z
+      .array(dateOnly)
+      .max(1000)
+      .refine((d) => new Set(d).size === d.length, 'Duplicate completion date')
+      .default([]),
+    order: z.number().finite().optional(),
+    ...stamp,
+  })
+  .passthrough();
 export const boardSchema = z
   .object({
     schemaVersion: z.literal(1),
@@ -115,14 +141,18 @@ export const boardSchema = z
       .default({}),
     /** Optional freehand ink. Absent on boards without drawings; unknown to readers before 1.2. */
     ink: z.record(id, strokeSchema).optional(),
+    /** Optional routines. Absent on boards without routines; unknown to readers before 1.5. */
+    routines: z.record(id, routineSchema).optional(),
   })
   .passthrough();
 export type Task = z.infer<typeof taskSchema>;
 export type BoardNode = z.infer<typeof nodeSchema>;
 export type Board = z.infer<typeof boardSchema>;
 export type Stroke = z.infer<typeof strokeSchema>;
+export type Routine = z.infer<typeof routineSchema>;
 export type Status = Task['status'];
 export const inkOf = (board: Board): Record<string, Stroke> => board.ink ?? {};
+export const routinesOf = (board: Board): Record<string, Routine> => board.routines ?? {};
 export type Priority = Task['priority'];
 export type Color = (typeof colors)[number];
 export class BoardError extends Error {}
@@ -198,6 +228,8 @@ export function canonical(board: Board): Board {
   const out: Board = { ...board, tasks: sortRecord(board.tasks), nodes: sortRecord(board.nodes), edges: sortRecord(board.edges) };
   if (board.ink && Object.keys(board.ink).length) out.ink = sortRecord(board.ink);
   else delete out.ink;
+  if (board.routines && Object.keys(board.routines).length) out.routines = sortRecord(board.routines);
+  else delete out.routines;
   return out;
 }
 export const serialize = (board: Board): string => JSON.stringify(canonical(board), null, 2);

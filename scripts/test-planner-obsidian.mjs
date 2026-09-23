@@ -21,7 +21,12 @@ page.on('pageerror', (error) => errors.push(error.message));
 page.on('request', (request) => {
   if (request.url().includes('roseboard-test.invalid')) requests.push(request.url());
 });
-const report = { version: '1.4.0', started: new Date().toISOString(), results, errors };
+const report = {
+  version: JSON.parse(await readFile('manifest.json', 'utf8')).version,
+  started: new Date().toISOString(),
+  results,
+  errors,
+};
 const path = 'Planner acceptance.md';
 const notePath = 'Reader fixtures/Project brief.md';
 const today = new Intl.DateTimeFormat('en-CA', {
@@ -388,33 +393,31 @@ try {
       { path: notePath, text: note },
     );
   });
-  await test('Document cards render live Markdown; library deduplicates task and card links', async () => {
+  await test('Document cards render live Markdown safely while reading on the canvas', async () => {
     await root().getByLabel('Reset zoom', { exact: true }).click();
     await root().locator('.rb-note-preview').getByText('A calmer workspace', { exact: false }).waitFor();
     assert.equal(await root().locator('.rb-note-preview table').count(), 1);
-    await mode('Documents');
-    assert.equal(await root().getByLabel('Inspector', { exact: true }).count(), 0);
-    assert.equal(await root().getByLabel('Document list', { exact: true }).getByRole('button').count(), 1);
-    assert.ok((await root().getByLabel('Document reader').innerText()).includes('Release brief'));
-    assert.equal(await root().locator('.rb-document-page input[type=checkbox]:disabled').count(), 2);
-    assert.equal(
-      await root()
-        .locator('.rb-document-page img, .rb-document-page script, .rb-document-page iframe')
-        .count(),
-      0,
-    );
+    const card = root().locator('[data-id="docCard"]');
+    // The editing scenarios above may leave this card open for reading.
+    const read = card.getByRole('button', { name: 'Read', exact: true });
+    if (await read.count()) await read.click();
+    const reader = card.locator('.rb-note-reading');
+    assert.ok((await reader.innerText()).includes('Release brief'));
+    assert.equal(await reader.locator('input[type=checkbox]:disabled').count(), 2);
+    assert.equal(await reader.locator('img, script, iframe').count(), 0);
     assert.equal(requests.length, 0);
     assert.equal(await page.evaluate(() => window.roseboardReaderUnsafe), undefined);
-    await page.screenshot({ path: 'docs/roseboard-documents.png' });
+    await page.screenshot({ path: 'docs/roseboard-canvas-reader.png' });
   });
   await test('Reader refreshes external note edits and resolves explicit Markdown links relative to the document', async () => {
+    const card = root().locator('[data-id="docCard"]');
     await page.evaluate(
       async ([path, text]) => app.vault.modify(app.vault.getAbstractFileByPath(path), text),
       [notePath, note + '\nFresh content from a collaborator.\n'],
     );
-    await root().getByLabel('Document reader').getByText('Fresh content from a collaborator.').waitFor();
-    await root()
-      .getByLabel('Document reader')
+    await card.locator('.rb-note-reading').getByText('Fresh content from a collaborator.').waitFor();
+    await card
+      .locator('.rb-note-reading')
       .getByRole('button', { name: 'supporting notes', exact: true })
       .click();
     await page.waitForFunction(
@@ -426,7 +429,8 @@ try {
       app.workspace.setActiveLeaf(leaf, { focus: true });
     }, path);
   });
-  await test('Document rename, deletion and restoration update the reader without altering note bodies', async () => {
+  await test('Document rename, deletion and restoration update the card without altering note bodies', async () => {
+    const card = root().locator('[data-id="docCard"]');
     await page.evaluate(
       async ([oldPath, newPath]) => app.vault.rename(app.vault.getAbstractFileByPath(oldPath), newPath),
       [notePath, 'Reader fixtures/Renamed brief.md'],
@@ -434,48 +438,47 @@ try {
     await eventually(async () =>
       assert.equal((await board()).tasks.review.notePath, 'Reader fixtures/Renamed brief.md'),
     );
-    await root().getByLabel('Document reader').getByText('Release brief', { exact: true }).waitFor();
+    await card.locator('.rb-note-reading').getByText('Release brief', { exact: true }).waitFor();
     await page.evaluate(async () =>
       app.vault.delete(app.vault.getAbstractFileByPath('Reader fixtures/Renamed brief.md')),
     );
-    await root().getByLabel('Document reader').getByText('This note is missing.', { exact: false }).waitFor();
+    await card.getByText('This note is missing.', { exact: false }).waitFor();
     await page.evaluate(async (text) => {
       await app.vault.create('Reader fixtures/Renamed brief.md', text);
     }, note);
-    await root().getByLabel('Document reader').getByText('Release brief', { exact: true }).waitFor();
+    await card.locator('.rb-note-reading').getByText('Release brief', { exact: true }).waitFor();
     assert.equal(await readFile(join(runtime.vault, 'Reader fixtures/Renamed brief.md'), 'utf8'), note);
+    await card.getByRole('button', { name: 'Collapse', exact: true }).click();
   });
-  await test('Library picker links a document below existing cards, avoids duplicates and supports search', async () => {
-    const before = (await board()).nodes;
-    await root().getByRole('button', { name: 'Link a document', exact: true }).click();
-    await page.locator('.prompt-input').fill('Reader fixtures/Sibling');
-    await page.locator('.suggestion-item').filter({ hasText: 'Reader fixtures/Sibling.md' }).click();
-    await root().locator('.rb-note-reading').getByText('Relative link works.').waitFor();
-    await mode('Documents');
-    const after = (await board()).nodes;
-    const added = Object.values(after).find(
-      (n) => n.type === 'note' && n.notePath === 'Reader fixtures/Sibling.md',
+  await test('Read on canvas from a planner opens the linked card in place; there is no separate reader view', async () => {
+    const before = JSON.stringify(await board());
+    await mode('Day');
+    await root().getByRole('button', { name: 'Board view', exact: true }).click();
+    assert.equal(
+      await page
+        .locator('.menu .menu-item-title')
+        .filter({ hasText: /^Documents$/ })
+        .count(),
+      0,
     );
-    assert.ok(added.y > Math.max(...Object.values(before).map((n) => n.y + n.height)));
-    for (const [id, node] of Object.entries(before)) assert.deepEqual(after[id], node);
-    await root().getByRole('button', { name: 'Link a document', exact: true }).click();
-    await page.locator('.prompt-input').fill('Reader fixtures/Sibling');
-    await page.locator('.suggestion-item').filter({ hasText: 'Reader fixtures/Sibling.md' }).click();
-    assert.deepEqual((await board()).nodes, after);
-    await mode('Documents');
-    await root().getByLabel('Search documents').fill('Sibling');
-    assert.equal(await root().getByLabel('Document list', { exact: true }).getByRole('button').count(), 1);
-    await root().getByLabel('Search documents').fill('');
-    await action('Undo');
-    assert.deepEqual((await board()).nodes, before);
+    await page.keyboard.press('Escape');
+    await root().locator('.rb-agenda-title').filter({ hasText: 'Review the release brief' }).click();
+    await root().getByRole('button', { name: 'Read on canvas', exact: true }).click();
+    await root().locator('[data-id="docCard"] .rb-note-reading').getByText('Release brief').waitFor();
+    assert.equal(await root().getByLabel('Inspector', { exact: true }).count(), 0);
+    assert.equal(JSON.stringify(await board()), before);
+    await root()
+      .locator('[data-id="docCard"]')
+      .getByRole('button', { name: 'Collapse', exact: true })
+      .click();
   });
-  await test('Day view captures unplaced tasks, tracks progress, and keeps overdue work separate', async () => {
+  await test('Day view capture also places the task on the canvas, tracks progress, and keeps overdue work separate', async () => {
     await mode('Day');
     await root().getByLabel('Planner date').fill(today);
     assert.equal(
       await root()
         .getByLabel('Selected day tasks', { exact: true })
-        .locator('.rb-agenda-rows > article')
+        .locator(':scope > .rb-agenda-rows > article')
         .count(),
       3,
     );
@@ -486,7 +489,17 @@ try {
     const b = await board();
     const [id, task] = Object.entries(b.tasks).find(([, t]) => t.title === 'Prepare the demo');
     assert.equal(task.dueDate, today);
-    assert.ok(!Object.values(b.nodes).some((n) => n.taskId === id));
+    const placed = Object.values(b.nodes).filter((n) => n.taskId === id);
+    assert.equal(placed.length, 1);
+    for (const other of Object.values(b.nodes))
+      if (other !== placed[0])
+        assert.ok(
+          placed[0].x >= other.x + other.width ||
+            placed[0].x + placed[0].width <= other.x ||
+            placed[0].y >= other.y + other.height ||
+            placed[0].y + placed[0].height <= other.y,
+          'the new card must not cover an existing card',
+        );
     await root().getByRole('button', { name: 'Complete Prepare the demo', exact: true }).click();
     assert.equal((await board()).tasks[id].status, 'done');
     await action('Undo');
@@ -504,6 +517,108 @@ try {
     await action('Undo');
     assert.equal((await board()).tasks.draft.dueDate, today);
   });
+  await test('Day tasks move by drag and drop between Unscheduled, the day list and the week strip', async () => {
+    await mode('Day');
+    await root().getByLabel('Planner date').fill(today);
+    const positions = (await board()).nodes;
+    const drag = async (source, target) => {
+      const transfer = await page.evaluateHandle(() => new DataTransfer());
+      await source.dispatchEvent('dragstart', { dataTransfer: transfer });
+      await target.dispatchEvent('dragover', { dataTransfer: transfer });
+      await target.dispatchEvent('drop', { dataTransfer: transfer });
+      await source.dispatchEvent('dragend', { dataTransfer: transfer }).catch(() => {});
+      await transfer.dispose();
+    };
+    const row = (region, title) =>
+      root().getByLabel(region, { exact: true }).locator('.rb-agenda-task').filter({ hasText: title });
+    // The previous scenario leaves the draft planned for today.
+    assert.equal((await board()).tasks.draft.dueDate, today);
+    await drag(
+      row('Selected day tasks', 'Draft the weekly update'),
+      root().getByLabel('Unscheduled tasks', { exact: true }),
+    );
+    assert.equal((await board()).tasks.draft.dueDate, undefined);
+    await drag(
+      row('Unscheduled tasks', 'Draft the weekly update'),
+      root().getByLabel('Selected day tasks', { exact: true }),
+    );
+    assert.equal((await board()).tasks.draft.dueDate, today);
+    const weekday = (new Date(`${offset(1)}T12:00:00Z`).getUTCDay() + 6) % 7;
+    if (weekday !== 0) {
+      await drag(
+        row('Selected day tasks', 'Draft the weekly update'),
+        root().locator('.rb-week-day').nth(weekday),
+      );
+      assert.equal((await board()).tasks.draft.dueDate, offset(1));
+      await action('Undo');
+      assert.equal((await board()).tasks.draft.dueDate, today);
+    }
+    assert.deepEqual((await board()).nodes, positions);
+    await root().getByLabel('Planner date').fill(today);
+    await root().getByRole('button', { name: 'Move all to today', exact: true }).click();
+    assert.equal((await board()).tasks.handoff.dueDate, today);
+    await action('Undo');
+    assert.equal((await board()).tasks.handoff.dueDate, offset(-1));
+  });
+  await test('Routines repeat on chosen weekdays, tick per day, keep a streak, and stay out of tasks and the canvas', async () => {
+    const before = await board();
+    await root().getByLabel('New routine').fill('Morning review');
+    await root().getByLabel('New routine').press('Enter');
+    let b = await board();
+    const [id, routine] = Object.entries(b.routines).find(([, r]) => r.title === 'Morning review');
+    assert.deepEqual(routine.days, [1, 2, 3, 4, 5, 6, 7]);
+    assert.deepEqual(b.tasks, before.tasks);
+    assert.deepEqual(b.nodes, before.nodes);
+    await root().getByRole('checkbox', { name: 'Complete routine Morning review' }).click();
+    assert.deepEqual((await board()).routines[id].done, [today]);
+    assert.equal(await root().getByLabel('Routine progress').getAttribute('value'), '1');
+    // Yesterday counts towards the streak shown today.
+    await root().getByLabel('Previous day').click();
+    await root().getByRole('checkbox', { name: 'Complete routine Morning review' }).click();
+    await root().getByRole('button', { name: 'Today', exact: true }).click();
+    await root().locator('.rb-streak').filter({ hasText: '2' }).waitFor();
+    // Future days are visible but cannot be ticked early.
+    await root().getByLabel('Next day').click();
+    assert.ok(await root().getByRole('checkbox', { name: 'Complete routine Morning review' }).isDisabled());
+    await root().getByRole('button', { name: 'Today', exact: true }).click();
+    // Weekday schedule: a weekday-only routine disappears from a weekend day.
+    await root().getByRole('button', { name: 'Routine options for Morning review', exact: true }).click();
+    await page
+      .locator('.menu .menu-item-title')
+      .filter({ hasText: /^Weekdays$/ })
+      .click();
+    assert.deepEqual((await board()).routines[id].days, [1, 2, 3, 4, 5]);
+    const weekday = (new Date(`${today}T12:00:00Z`).getUTCDay() + 6) % 7; // 0 = Monday
+    const saturday = offset((5 - weekday + 7) % 7 || 7);
+    const monday = offset((7 - weekday) % 7 || 7);
+    await root().getByLabel('Planner date').fill(saturday);
+    assert.equal(
+      await root()
+        .getByRole('checkbox', { name: /routine Morning review/ })
+        .count(),
+      0,
+    );
+    await root().getByText('1 routine not scheduled', { exact: false }).waitFor();
+    await root().getByLabel('Planner date').fill(monday);
+    await flush();
+    const stored = JSON.parse(
+      (await readFile(join(runtime.vault, path), 'utf8')).match(/```roseboard\n([\s\S]*?)\n```/)[1],
+    );
+    assert.deepEqual(stored.routines[id].days, [1, 2, 3, 4, 5]);
+    assert.ok(stored.routines[id].done.includes(today));
+    await root().getByRole('button', { name: 'Routine options for Morning review', exact: true }).click();
+    await page
+      .locator('.menu .menu-item-title')
+      .filter({ hasText: /^Delete routine…$/ })
+      .click();
+    await page.getByRole('heading', { name: 'Delete routine?' }).waitFor();
+    await page.locator('.modal').getByRole('button', { name: 'Continue', exact: true }).click();
+    await eventually(async () => assert.equal((await board()).routines, undefined));
+    await action('Undo');
+    assert.equal((await board()).routines[id].title, 'Morning review');
+    await root().getByLabel('Planner date').fill(today);
+    await page.screenshot({ path: 'docs/roseboard-day.png' });
+  });
   await test('Assignments are editable, searchable and filter the calendar and daily view', async () => {
     await root().locator('.rb-agenda-title').filter({ hasText: 'Review the release brief' }).click();
     await root().getByLabel('Task assignee', { exact: true }).fill('Alex');
@@ -512,7 +627,13 @@ try {
     await closeInspector();
     await root().getByLabel('Toggle filters', { exact: true }).click();
     await root().getByLabel('Filter assignee').selectOption('name:Alex');
-    assert.equal(await root().locator('.rb-agenda-rows > article').count(), 1);
+    assert.equal(
+      await root()
+        .getByLabel('Selected day tasks', { exact: true })
+        .locator(':scope > .rb-agenda-rows > article')
+        .count(),
+      1,
+    );
     await mode('Calendar');
     assert.equal(await root().locator('.rb-calendar-task').count(), 1);
     await root().getByRole('button', { name: 'Clear active filters', exact: true }).click();
@@ -573,7 +694,7 @@ try {
     await root().locator('[data-id="reviewCard"]').click();
     await closeInspector();
     const before = await board();
-    for (const name of ['Documents', 'Day', 'Calendar']) {
+    for (const name of ['Day', 'Calendar', 'List']) {
       await mode(name);
       await root().focus();
       await page.keyboard.press('ArrowRight');
@@ -583,11 +704,11 @@ try {
       assert.equal(Object.keys((await board()).tasks).length, Object.keys(before.tasks).length);
     }
   });
-  await test('Narrow desktop viewport keeps Day, Calendar and Documents usable without horizontal overflow', async () => {
+  await test('Narrow desktop viewport keeps Day, Calendar and List usable without horizontal overflow', async () => {
     await page.setViewportSize({ width: 430, height: 900 });
-    for (const name of ['Day', 'Calendar', 'Documents']) {
+    for (const name of ['Day', 'Calendar', 'List']) {
       await mode(name);
-      const selector = name === 'Documents' ? '.rb-documents' : '.rb-planner';
+      const selector = name === 'List' ? '.rb-list' : '.rb-planner';
       const sizes = await root()
         .locator(selector)
         .evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
@@ -597,7 +718,7 @@ try {
     await page.screenshot({ path: 'docs/roseboard-planner-narrow.png' });
     await page.setViewportSize({ width: 1440, height: 1000 });
   });
-  await test('New in a planner uses the selected day and stays unplaced', async () => {
+  await test('New in a planner uses the selected day and adds one card without moving others', async () => {
     await mode('Calendar');
     const selected = offset(4);
     await root().getByLabel('Planner date').fill(selected);
@@ -609,10 +730,17 @@ try {
     const after = await board();
     const task = Object.entries(after.tasks).find(([id]) => !before.tasks[id])[1];
     assert.equal(task.dueDate, selected);
-    assert.deepEqual(after.nodes, before.nodes);
+    const added = Object.keys(after.nodes).filter((id) => !before.nodes[id]);
+    assert.equal(added.length, 1);
+    assert.equal(
+      after.nodes[added[0]].taskId,
+      Object.keys(after.tasks).find((id) => !before.tasks[id]),
+    );
+    for (const [id, node] of Object.entries(before.nodes)) assert.deepEqual(after.nodes[id], node);
     await closeInspector();
     await action('Undo');
     assert.deepEqual((await board()).tasks, before.tasks);
+    assert.deepEqual((await board()).nodes, before.nodes);
   });
   await test('Compact header and tool palette stay within desktop and narrow panes', async () => {
     await mode('Canvas');

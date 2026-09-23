@@ -1,7 +1,8 @@
-import { useState, type DragEvent } from 'react';
+import { useId, useState, type DragEvent } from 'react';
 import { blocked, overdue, statuses, newId, newTask, type Board, type Status } from '../domain/model';
-import { setStatus, type Edit } from '../domain/commands';
+import { placeTask, setStatus, type Edit } from '../domain/commands';
 import type { BoardHost } from './ports';
+import { Name } from './Name';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
 import { formatDue } from './Nodes';
 /**
@@ -30,6 +31,7 @@ export function Kanban({
   select: (id: string) => void;
   complete: (id: string) => void;
 }) {
+  const uid = useId();
   const [over, setOver] = useState<Status>();
   const [dragging, setDragging] = useState<string>();
   const move = (id: string, status: Status) => {
@@ -47,17 +49,22 @@ export function Kanban({
   };
   const add = (status: Status) =>
     edit('Create task', (b) => {
-      b.tasks[newId('task')] = { ...newTask('New task'), status };
+      const id = newId('task');
+      b.tasks[id] = { ...newTask('New task'), status };
+      placeTask(b, id);
     });
   return (
-    <div className="rb-kanban" aria-label="Kanban board">
+    <div className="rb-kanban" aria-labelledby={`${uid}-board`}>
+      <Name id={`${uid}-board`}>Kanban board</Name>
       {statuses.map((status) => {
-        const ids = Object.keys(board.tasks).filter((id) => matching.has(id) && board.tasks[id]!.status === status);
+        const ids = Object.keys(board.tasks).filter(
+          (id) => matching.has(id) && board.tasks[id]!.status === status,
+        );
         return (
           <section
             key={status}
             className={`rb-column rb-column-${status}${over === status ? ' is-over' : ''}`}
-            aria-label={`${statusLabel[status]} column`}
+            aria-labelledby={`${uid}-${status}`}
             onDragOver={(e) => {
               if (readOnly) return;
               e.preventDefault();
@@ -69,6 +76,7 @@ export function Kanban({
             }}
             onDrop={onDrop(status)}
           >
+            <Name id={`${uid}-${status}`}>{`${statusLabel[status]} column`}</Name>
             <header className="rb-column-head">
               <span className={`rb-chip rb-status rb-status-${status}`}>
                 <Icon name={statusIcon[status]!} />

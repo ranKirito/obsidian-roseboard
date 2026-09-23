@@ -1,5 +1,14 @@
 import { produce, type Draft } from 'immer';
-import { type Board, type BoardNode, type Status, type Stroke, newId, newTask, validateBoard } from './model';
+import {
+  type Board,
+  type BoardNode,
+  type Status,
+  type Stroke,
+  ROUTINE_HISTORY,
+  newId,
+  newTask,
+  validateBoard,
+} from './model';
 export type Edit = (board: Draft<Board>) => void;
 export interface Stamp {
   at: string;
@@ -16,7 +25,7 @@ export function applyEdit(board: Board, edit: Edit, stamp?: Stamp): Board {
   const stamped = !stamp
     ? next
     : produce(next, (draft) => {
-        for (const key of ['tasks', 'nodes', 'ink'] as const)
+        for (const key of ['tasks', 'nodes', 'ink', 'routines'] as const)
           for (const id of Object.keys(next[key] ?? {}))
             if (next[key]![id] !== board[key]?.[id]) {
               const record = draft[key]![id]!;
@@ -130,6 +139,47 @@ export function placeAll(board: Draft<Board>, only?: string[]): string[] {
     };
     return id;
   });
+}
+const SLOT_X = 340,
+  SLOT_Y = 230,
+  SLOT_GAP = 40;
+/**
+ * First free card-sized slot on a grid anchored at the board's top-left card, scanning row by row.
+ * Frames count as occupied, so a new card never lands inside a frame it does not belong to.
+ */
+export function freeSlot(board: Board | Draft<Board>, width = 300, height = 190): { x: number; y: number } {
+  const nodes = Object.values(board.nodes);
+  if (!nodes.length) return { x: 100, y: 100 };
+  const left = Math.min(...nodes.map((n) => n.x)),
+    top = Math.min(...nodes.map((n) => n.y)),
+    right = Math.max(...nodes.map((n) => n.x + n.width)),
+    bottom = Math.max(...nodes.map((n) => n.y + n.height));
+  const columns = Math.max(4, Math.ceil((right - left) / SLOT_X));
+  const free = (x: number, y: number) =>
+    !nodes.some(
+      (n) =>
+        x < n.x + n.width + SLOT_GAP &&
+        x + width + SLOT_GAP > n.x &&
+        y < n.y + n.height + SLOT_GAP &&
+        y + height + SLOT_GAP > n.y,
+    );
+  // Bounded scan; very large boards fall back to the row below everything.
+  for (let cell = 0; cell < 2000; cell++) {
+    const x = left + (cell % columns) * SLOT_X,
+      y = top + Math.floor(cell / columns) * SLOT_Y;
+    if (y > bottom + SLOT_GAP) break;
+    if (free(x, y)) return { x, y };
+  }
+  return { x: left, y: bottom + 100 };
+}
+/** Gives an unplaced task a card at the first free slot. Returns the node ID, new or existing. */
+export function placeTask(board: Draft<Board>, taskId: string): string | undefined {
+  if (!board.tasks[taskId]) return undefined;
+  const existing = Object.entries(board.nodes).find(([, n]) => n.type === 'task' && n.taskId === taskId);
+  if (existing) return existing[0];
+  const id = newId('node');
+  board.nodes[id] = { type: 'task', taskId, ...freeSlot(board), width: 300, height: 190 };
+  return id;
 }
 export function setDependency(
   board: Draft<Board>,
@@ -269,4 +319,35 @@ export class History {
     this.future = [];
     this.mergeKey = '';
   }
+}
+/** Routines: records like any other, so stamps, undo and the three-way merge apply unchanged. */
+export function addRoutine(board: Draft<Board>, title: string, days?: number[]): string {
+  const id = newId('routine');
+  const routines = (board.routines ??= {});
+  const order = Math.max(0, ...Object.values(routines).map((r) => r.order ?? 0)) + 1;
+  routines[id] = { title, days: days ?? [1, 2, 3, 4, 5, 6, 7], done: [], order };
+  return id;
+}
+export function toggleRoutine(board: Draft<Board>, id: string, date: string): void {
+  const routine = board.routines?.[id];
+  if (!routine) return;
+  if (routine.done.includes(date)) routine.done = routine.done.filter((d) => d !== date);
+  else routine.done = [...routine.done, date].sort().slice(-ROUTINE_HISTORY);
+}
+export function removeRoutine(board: Draft<Board>, id: string): void {
+  if (!board.routines) return;
+  delete board.routines[id];
+  if (!Object.keys(board.routines).length) delete board.routines;
+}
+/** Swaps a routine with its neighbour in display order. */
+export function moveRoutine(board: Draft<Board>, id: string, direction: -1 | 1): void {
+  const list = Object.entries(board.routines ?? {}).sort(
+    ([a, x], [b, y]) => (x.order ?? 0) - (y.order ?? 0) || x.title.localeCompare(y.title) || a.localeCompare(b),
+  );
+  const index = list.findIndex(([key]) => key === id);
+  const other = list[index + direction];
+  if (index < 0 || !other) return;
+  list.forEach(([, routine], i) => (routine.order = i + 1));
+  list[index]![1].order = index + 1 + direction;
+  other[1].order = index + 1;
 }

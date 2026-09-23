@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.5.0 — 2026-09-23
+
+### Day page
+- Redesigned Day. The header gives a one-line summary. A Monday-first week strip shows open tasks and routine completion per day. The layout has a Tasks card, a Routines card and an Unscheduled tray. It adapts to its own width, so it reflows when the inspector opens.
+- **Routines.** Repeating habits, kept apart from one-off tasks. Choose Every day, Weekdays, Weekends or specific weekdays. Tick them off per day. Streaks count scheduled days in a row, and an unfinished today does not break a streak. Rename, reorder or delete routines from their menu. Future days show routines but cannot be ticked early. Routines never become tasks or canvas cards.
+- Drag and drop in Day: move tasks between the day list, the Unscheduled tray (clears the date) and any day in the week strip. Rows show a grip on hover.
+- **Move all to today** for overdue work, and **Next week** and **Open details** in the row menu.
+- Fixed a hover highlight that drew a box inside rows. The row now highlights as a whole. Removed the unexplained icon-only status badge from rows; “In progress” is shown in the row details instead.
+
+### Resizing
+- Every edge and corner of an editable card resizes it, without selecting it first. Edges show a pink line and a resize cursor on hover. Corner handles appear on hover or selection. Edge hit zones stay about 10 screen pixels wide at any zoom. The connection dots at edge midpoints sit on top, so dragging from them still connects cards or creates a linked task. Task cards cannot be resized smaller than their content.
+
+### Accessibility and polish
+- Panels, lists and toolbars are named with `aria-labelledby` instead of `aria-label`, because Obsidian shows every `aria-label` as a hover tooltip. Names are unchanged for assistive technology; hovering empty space no longer shows labels such as “Daily planner” or the document path.
+
+### Storage
+- New optional top-level `routines` record (see docs/STORAGE.md). Schema version stays 1. Boards without routines are unchanged; older readers keep the field as an unknown extension.
+
+### Canvas and documents
+- Tasks created in Day, Calendar or Kanban (quick capture, **New → Task**, column **+**) now also get a card on the canvas, in the first free grid slot near existing work. The slot search skips frames and never overlaps or moves existing cards. Older unplaced tasks still appear in **Unplaced**.
+- Removed the separate **Documents** view. Linked notes are read and edited on their canvas cards; **Read on canvas** in the inspector expands the card, or opens the note in Obsidian when the task has no card.
+- **Edit** is available directly on document cards; no need to click **Read** first. The editor marks unsaved changes and the card grows with the draft.
+- Task cards and cards being read or edited grow to fit their content (up to 1,600 and 900 px). This height is display-only: the saved size stays the minimum and is never rewritten. Collapsed document cards too short for a preview show only their actions.
+
+### Tasks
+- Task cards list up to eight checklist steps, each with a checkbox that toggles in place. Longer lists show “+N more steps”. Steps are hidden when zoomed far out.
+- Inspector checklist fields wrap long steps and grow with their text. Enter moves from a step to the new-step field and adds a new step. The inspector is 340 px wide (was 312).
+
+### Layout and alignment
+- Selection actions no longer slide under the zoom controls. Their position follows the canvas width, which shrinks when the inspector opens: centred, then right-aligned, then stacked above the zoom controls; icon-only on phone widths.
+- Fixed invisible colour swatches in the selection bar. A generic floating-button rule removed their fill.
+- List view uses fixed columns, so status, priority, due date and actions line up across rows. On narrow panes the row wraps into two lines.
+- Day heading progress aligns with the date heading. Document text aligns with the card edge and hint. Phone-width tool palettes drop Undo/Redo, still available in **•••** and ⌘/Ctrl+Z, instead of clipping. Their scrollbars are hidden.
+
 ## 1.4.1 — 2026-09-21
 
 - Published in the Obsidian Community Directory with installation enabled after the automated release review completed without blocking errors. Version 1.4.1 is the sole downloadable release; development and public repositories each retain only main.

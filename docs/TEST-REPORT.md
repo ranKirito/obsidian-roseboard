@@ -1,4 +1,25 @@
-# Roseboard 1.4 — implementation and test report
+# Roseboard — implementation and test reports
+
+## 1.5.0 — 2026-09-23
+
+Development validation on `main`, desktop Obsidian, isolated temporary vault and profile. **100/100 automated checks and 60/60 actual Obsidian scenarios pass**: 37 canvas regressions and 23 document, planner, toolbar and renderer-security scenarios. Neither integration report captured a renderer error, and no remote image request was made. TypeScript checking, schema generation and the production bundle pass. The 1.5.0 package contains the exact `main.js` and `styles.css` bytes exercised by these integration tests; only version metadata changed afterward (see `release-verification.json`).
+
+What changed and how it was checked:
+
+- **Planner and Kanban tasks get canvas cards.** Two unit tests cover `placeTask`/`freeSlot`: no overlap with cards or frames, existing records unchanged, idempotent placement, and a fixed origin on empty boards. Integration checks Day quick capture and **New → Task** in Calendar (one added card; all existing nodes unchanged; undo removes both).
+- **Documents view removed.** Its scenarios now run on the canvas card: safe rendering, live refresh, relative links, rename/delete/restore, and **Read on canvas** from a planner.
+- **Checklist on task cards and content-fitted heights.** A step is toggled on the card and undone. Added steps grow the displayed card while the stored height stays unchanged.
+- **Selection bar placement.** At four widths, with and without the inspector, it never intersects the zoom controls, and its swatches are filled.
+- **Edge resizing.** On an unselected card, elements under the pointer report `ew-resize`, `ns-resize` and `nwse-resize` at edges and corners. An edge midpoint resolves to the connection dot. Dragging the right edge widens the card; undo restores it. The linked-task-by-connection scenario still passes.
+- **Routines.** Seven unit tests cover the optional record: defaults, extensions and omission when empty; weekday scheduling; stamped per-day toggles with bounded history; streaks; ordering; set-merging of ticks from two devices; and edit-versus-remove overlaps. The integration scenario adds a routine, ticks today and yesterday (streak 2), and confirms future days cannot be ticked. It then switches to Weekdays, checks that a Saturday hides it, and confirms the file on disk. Finally it deletes with confirmation and undoes. Tasks and nodes are unchanged throughout.
+- **Day drag and drop.** Integration moves a task day list → Unscheduled (date cleared), Unscheduled → day list, and day list → week strip (tomorrow). **Move all to today** is exercised with undo. Canvas nodes are unchanged.
+- **Hover tooltips.** A probe dispatching hover to every labelled non-control element in a board found no Obsidian tooltip after the change.
+- Screenshots were reviewed manually at 1440, 1000, 700 and 430 px for Canvas, Kanban, List, Day and Calendar, plus reading and editing a document card, the inspector checklist, the routine menu and resize hover.
+
+## 1.4.1 — 2026-09-21
+
+The historical 1.4.1 results below are unchanged.
+
 
 Compatibility-fix validation, 2026-09-21, on `main`: **91/91 automated checks and 55/55 actual Obsidian scenarios pass** (34 canvas regressions plus 21 document, planner, toolbar and renderer-security scenarios). Both integration reports contain zero captured renderer errors. TypeScript checking and production bundling pass. The 1.4.1 package contains the exact JavaScript and CSS bytes exercised by these integration tests; only version metadata changed afterward, and all 91 automated tests passed again. Both repository builds and the ZIP contents match. Current hashes and scope are in `release-verification.json`.
 

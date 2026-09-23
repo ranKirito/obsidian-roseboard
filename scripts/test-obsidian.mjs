@@ -131,6 +131,90 @@ try {
     assert.ok((await root().locator('.rb-icon svg').count()) > 10, 'Lucide icons render');
     await page.screenshot({ path: 'docs/roseboard-desktop.png' });
   });
+  await test('Task cards show checklist steps, toggle them in place, and grow without saving a new size', async () => {
+    const welcome = 'Welcome to Roseboard.md';
+    const card = root().locator('[data-id="node-sketch"]');
+    const steps = () => board(welcome).then((b) => b.tasks.sketch.checklist.map((c) => c.done));
+    assert.equal(await card.locator('.rb-card-checklist li').count(), 3);
+    await card.getByRole('checkbox', { name: 'Complete step Sketch two directions' }).click();
+    assert.deepEqual(await steps(), [true, true, false]);
+    await action('Undo');
+    assert.deepEqual(await steps(), [true, false, false]);
+    const saved = (await board(welcome)).nodes['node-sketch'].height;
+    const shown = () => card.evaluate((el) => el.offsetHeight);
+    const initial = await shown();
+    assert.ok(initial >= saved);
+    await page.evaluate(
+      `${session(welcome)}.edit('Add steps', (b) => { for (let i = 0; i < 6; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false }); })`,
+    );
+    await eventually(async () => assert.ok((await shown()) > initial + 60));
+    assert.equal(await card.locator('.rb-card-checklist li').count(), 9);
+    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved, 'fitted height is view-only');
+    await action('Undo');
+    await eventually(async () => assert.ok(Math.abs((await shown()) - initial) <= 2));
+  });
+  await test('Selection actions never overlap the zoom controls, with or without the inspector', async () => {
+    const rects = async () => ({
+      bar: await root().locator('.rb-selectionbar').boundingBox(),
+      nav: await root().locator('.rb-navigation').boundingBox(),
+      canvas: await root().locator('.rb-canvas').boundingBox(),
+    });
+    const apart = (a, b) =>
+      a.x >= b.x + b.width || a.x + a.width <= b.x || a.y >= b.y + b.height || a.y + a.height <= b.y;
+    for (const width of [1440, 1000, 760, 430]) {
+      await page.setViewportSize({ width, height: 900 });
+      const close = root().getByRole('button', { name: 'Close inspector', exact: true });
+      if (await close.count()) await close.click();
+      await root().getByRole('button', { name: 'Fit all', exact: true }).click();
+      await root()
+        .locator('[data-id="node-brief"]')
+        .click({ position: { x: 24, y: 14 } });
+      for (const inspector of [true, false]) {
+        if (!inspector) await close.click();
+        else await root().getByLabel('Inspector', { exact: true }).waitFor();
+        const { bar, nav, canvas } = await rects();
+        assert.ok(apart(bar, nav), `${width}px, inspector ${inspector}: ${JSON.stringify({ bar, nav })}`);
+        assert.ok(
+          bar.x >= canvas.x && bar.x + bar.width <= canvas.x + canvas.width + 1,
+          `${width}px bar inside canvas`,
+        );
+      }
+      const swatch = await root()
+        .locator('.rb-selectionbar .rb-swatch-rose')
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+      assert.notEqual(swatch, 'rgba(0, 0, 0, 0)', 'selection colour swatches are visible');
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.screenshot({ path: 'docs/roseboard-selection.png' });
+  });
+  await test('Any card edge resizes without selecting first; edge midpoints still start connections', async () => {
+    const welcome = 'Welcome to Roseboard.md';
+    await root()
+      .locator('.react-flow__pane')
+      .click({ position: { x: 20, y: 20 } });
+    const card = root().locator('[data-id="node-review"]');
+    const box = await card.boundingBox();
+    const at = (x, y) =>
+      page.evaluate(
+        ([x, y]) => {
+          const el = document.elementFromPoint(x, y);
+          return { cls: String(el.className), cursor: getComputedStyle(el).cursor };
+        },
+        [x, y],
+      );
+    assert.equal((await at(box.x + box.width, box.y + box.height * 0.25)).cursor, 'ew-resize');
+    assert.equal((await at(box.x + box.width * 0.25, box.y + box.height)).cursor, 'ns-resize');
+    assert.equal((await at(box.x + box.width, box.y + box.height)).cursor, 'nwse-resize');
+    assert.match((await at(box.x + box.width + 1, box.y + box.height / 2)).cls, /react-flow__handle-right/);
+    const width = (await board(welcome)).nodes['node-review'].width;
+    await page.mouse.move(box.x + box.width, box.y + box.height * 0.25);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width + 60, box.y + box.height * 0.25, { steps: 8 });
+    await page.mouse.up();
+    assert.ok((await board(welcome)).nodes['node-review'].width > width + 40);
+    await action('Undo');
+    assert.equal((await board(welcome)).nodes['node-review'].width, width);
+  });
   await test('Create board command, task record, inspector edits, quick dates and checklist persist', async () => {
     await page.evaluate(() => app.commands.executeCommandById('roseboard:create-board'));
     await page.getByRole('textbox', { name: 'New board title' }).fill(testTitle);

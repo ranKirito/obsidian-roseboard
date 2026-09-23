@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import {
   type Board,
   type BoardNode,
@@ -13,8 +13,9 @@ import {
 import { deleteTask, moveNodes, setDependency, type Edit } from '../domain/commands';
 import type { BoardHost } from './ports';
 import { Markdown } from './Markdown';
+import { Name } from './Name';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
-import { NoteContent } from './Documents';
+import { NoteContent } from './NoteContent';
 const relative = (iso?: string) => {
   if (!iso) return '';
   const ms = Date.now() - new Date(iso).getTime();
@@ -59,6 +60,7 @@ export function Inspector({
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [newItem, setNewItem] = useState('');
   const assigneeOptions = useId();
+  const uid = useId();
   const description = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     const el = description.current;
@@ -109,7 +111,8 @@ export function Inspector({
             ? { icon: 'spline', text: 'Relationship' }
             : { icon: 'layout-dashboard', text: 'Board' };
   return (
-    <aside className="rb-inspector" aria-label="Inspector">
+    <aside className="rb-inspector" aria-labelledby={`${uid}-inspector`}>
+      <Name id={`${uid}-inspector`}>Inspector</Name>
       <div className="rb-inspector-heading">
         <span>
           <Icon name={heading.icon} />
@@ -246,7 +249,8 @@ export function Inspector({
           {node && nodeId && (
             <label>
               Colour
-              <span className="rb-swatches" role="radiogroup" aria-label="Card colour">
+              <span className="rb-swatches" role="radiogroup" aria-labelledby={`${uid}-colour`}>
+                <Name id={`${uid}-colour`}>Card colour</Name>
                 <button
                   type="button"
                   role="radio"
@@ -312,15 +316,21 @@ export function Inspector({
                       })
                     }
                   />
-                  <input
-                    aria-label="Checklist text"
+                  <GrowingText
+                    label="Checklist text"
                     className={item.done ? 'rb-struck' : ''}
                     value={item.text}
-                    onChange={(e) =>
+                    onEnter={(field) =>
+                      field
+                        .closest('.rb-inspector')
+                        ?.querySelector<HTMLTextAreaElement>('[aria-label="New checklist item"]')
+                        ?.focus()
+                    }
+                    onChange={(text) =>
                       edit(
                         'Edit checklist',
                         (b) => {
-                          b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.text = e.target.value;
+                          b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.text = text;
                         },
                         item.id,
                       )
@@ -338,17 +348,12 @@ export function Inspector({
               ))}
               <div className="rb-check-item rb-check-new">
                 <Icon name="plus" />
-                <input
-                  aria-label="New checklist item"
-                  placeholder="Add an item and press Enter"
+                <GrowingText
+                  label="New checklist item"
+                  placeholder="Add a step and press Enter"
                   value={newItem}
-                  onChange={(e) => setNewItem(e.target.value)}
-                  onKeyDown={(e: KeyboardEvent) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addItem();
-                    }
-                  }}
+                  onChange={setNewItem}
+                  onEnter={addItem}
                 />
                 <button type="button" aria-label="Add checklist item" onClick={addItem}>
                   Add
@@ -639,7 +644,7 @@ export function Inspector({
               onClick={() => previewNote(task?.notePath ?? (node as { notePath: string }).notePath)}
             >
               <Icon name="book-open" />
-              Read in board
+              Read on canvas
             </button>
             <button
               type="button"
@@ -701,6 +706,51 @@ function TagsInput({ tags, onChange }: { tags: string[]; onChange: (tags: string
       onChange={(event) => {
         setText(event.target.value);
         onChange(parseTags(event.target.value));
+      }}
+    />
+  );
+}
+/**
+ * Single-paragraph text that wraps and grows with its content instead of scrolling sideways.
+ * Enter never inserts a newline; it runs `onEnter` (commit, or move to the next field).
+ */
+function GrowingText({
+  value,
+  label,
+  placeholder,
+  className = '',
+  onChange,
+  onEnter,
+}: {
+  value: string;
+  label: string;
+  placeholder?: string;
+  className?: string;
+  onChange: (text: string) => void;
+  onEnter: (field: HTMLTextAreaElement) => void;
+}) {
+  const field = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = field.current;
+    if (!el) return;
+    el.setCssStyles({ height: 'auto' });
+    el.setCssStyles({ height: `${el.scrollHeight + 2}px` });
+  }, [value]);
+  return (
+    <textarea
+      ref={field}
+      rows={1}
+      aria-label={label}
+      placeholder={placeholder}
+      className={`rb-growing ${className}`}
+      maxLength={2000}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\r?\n/g, ' '))}
+      onKeyDown={(e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+          e.preventDefault();
+          onEnter(e.currentTarget as HTMLTextAreaElement);
+        }
       }}
     />
   );
