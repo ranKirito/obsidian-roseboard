@@ -1370,26 +1370,29 @@
 .roseboard-root .rb-task-body {
   display: contents;
 }
+.roseboard-root .rb-card-task > .rb-card-head,
+.roseboard-root .rb-card-task > .rb-card-title,
+.roseboard-root .rb-card-task > .rb-card-meta {
+  flex-shrink: 0;
+}
 /*
  * Card grid: checkmarks share the 22px column of the completion circle, and all text starts 30px
  * in, level with the title.
  */
 /*
- * The description fills the room the card has: at least one line, at most six, fading when cut
- * off. The card never grows for it; the editor shows the full text.
+ * Reserve up to four lines before shrinking the card. Longer descriptions scroll without fading
+ * the text, and remain readable without opening an editor (including in read-only boards).
  */
 .roseboard-root .rb-card-desc {
   flex: 0 1 auto;
-  min-height: 21px;
+  min-height: 64px;
   max-height: calc(13px * 1.55 * 6 + 2px);
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding-left: 30px;
   color: #cfcfd9;
   cursor: text;
-}
-.roseboard-root .rb-card-desc.is-clamped {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  user-select: text;
 }
 .roseboard-root .rb-card-desc .rb-markdown {
   max-height: none;
@@ -1415,6 +1418,7 @@
   user-select: text;
 }
 .roseboard-root .rb-card-desc-field {
+  flex-shrink: 0;
   width: calc(100% - 30px);
   margin-left: 30px;
   min-height: 60px;
@@ -1439,23 +1443,26 @@
   background: transparent;
   color: var(--rb-muted);
 }
-/* Collapsible checklist: a header, then a list that shows at least --rb-rows steps and scrolls. */
-/*
- * Shrinks with the card, but never below its header (24px), its minimum rows (24px each) and
- * the Show more/less button (22px). Gaps are 2px.
- */
+/* Wrapped rows determine the minimum. Header and actions stay outside the scrolling list. */
 .roseboard-root .rb-card-steps {
+  --rb-step-actions: 0px;
+  --rb-more-height: 0px;
   display: flex;
   flex-direction: column;
   flex: 0 1 auto;
-  gap: 2px;
-  min-height: 24px;
+  gap: 4px;
+  min-height: 33px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rb-border);
 }
 .roseboard-root .rb-card-steps.is-open {
-  min-height: calc(26px + var(--rb-rows, 1) * 24px);
+  min-height: calc(37px + var(--rb-list-height, 96px) + var(--rb-step-actions) + var(--rb-more-height));
+}
+.roseboard-root .rb-card-steps.can-add {
+  --rb-step-actions: 32px;
 }
 .roseboard-root .rb-card-steps.is-open.has-more {
-  min-height: calc(50px + var(--rb-rows, 1) * 24px);
+  --rb-more-height: 26px;
 }
 .roseboard-root .rb-card-steps-head {
   align-self: stretch;
@@ -1463,6 +1470,7 @@
   gap: 8px;
   height: 24px;
   min-height: 24px;
+  flex-shrink: 0;
   padding: 0;
   border: 0;
   border-radius: 6px;
@@ -1507,8 +1515,8 @@
 }
 .roseboard-root .rb-card-checklist {
   flex: 0 1 auto;
-  min-height: calc(var(--rb-rows, 1) * 24px);
-  max-height: 240px;
+  min-height: var(--rb-list-height, 96px);
+  max-height: 320px;
   overflow-y: auto;
   overscroll-behavior: contain;
   list-style: none;
@@ -1537,8 +1545,8 @@
   align-items: flex-start;
   gap: 8px;
   min-width: 0;
-  min-height: 24px;
-  padding: 2px 0;
+  min-height: 32px;
+  padding: 6px 0;
 }
 .roseboard-root .rb-card-step-text {
   flex: 1;
@@ -1579,10 +1587,12 @@
 .roseboard-root .rb-card-step-field {
   flex: 1;
   min-width: 0;
-  height: 24px;
-  min-height: 24px;
-  margin: -2px 0;
-  padding: 1px 7px;
+  min-height: 28px;
+  margin: -4px 0;
+  padding: 3px 7px;
+  line-height: 20px;
+  resize: none;
+  overflow: hidden;
 }
 .roseboard-root .rb-card-step-remove {
   flex-shrink: 0;
@@ -1598,6 +1608,7 @@
   --icon-size: 13px;
 }
 .roseboard-root .rb-card-checklist li:hover .rb-card-step-remove,
+.roseboard-root .rb-card-checklist li:focus-within .rb-card-step-remove,
 .roseboard-root .rb-card-step-remove:focus-visible {
   opacity: 1;
 }
@@ -1650,16 +1661,30 @@
   color: var(--rb-text);
 }
 .roseboard-root .rb-card-step-add button {
-  min-height: 20px;
-  height: 20px;
+  min-height: 28px;
+  height: 28px;
   padding: 0;
   gap: 8px;
   border: 0;
   background: transparent;
   color: var(--rb-faint);
   font-size: 12px;
-  opacity: 0;
-  transition: opacity 120ms ease;
+  opacity: 1;
+}
+.roseboard-root .rb-card-step-add {
+  flex-shrink: 0;
+}
+.roseboard-root .rb-card-desc::-webkit-scrollbar {
+  width: 6px;
+}
+.roseboard-root .rb-card-desc::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: #3a3a45;
+}
+.roseboard-root .rb-card-desc:focus-visible,
+.roseboard-root .rb-card-checklist:focus-visible {
+  outline: 1px solid var(--rb-pink-soft);
+  outline-offset: 2px;
 }
 .roseboard-root .rb-card-step-add button .rb-icon {
   width: 22px;

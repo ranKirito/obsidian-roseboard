@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import type { Draft } from 'immer';
 import { newId, type Task } from '../domain/model';
 import type { BoardHost } from './ports';
@@ -12,6 +20,29 @@ const contain = {
   onClick: (event: { stopPropagation: () => void }) => event.stopPropagation(),
   onDoubleClick: (event: { stopPropagation: () => void }) => event.stopPropagation(),
 };
+
+/** Keep wrapped text visible when typing or changing the card width. */
+function useGrowingField(field: RefObject<HTMLTextAreaElement | null>, text: string) {
+  useLayoutEffect(() => {
+    const el = field.current;
+    if (!el) return;
+    const grow = () => {
+      el.setCssStyles({ height: '0px' });
+      el.setCssStyles({ height: `${el.scrollHeight + 2}px` });
+      el.dispatchEvent(new CustomEvent('roseboard-fit', { bubbles: true }));
+    };
+    grow();
+    // Rewrap while resizing the card without observing our own height changes.
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      grow();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [field, text]);
+}
 
 /** Multi-line field that grows with its text. Blur or Cmd/Ctrl+Enter saves; Escape cancels. */
 function GrowingField({
@@ -41,14 +72,7 @@ function GrowingField({
     el?.focus();
     el?.setSelectionRange(el.value.length, el.value.length);
   }, []);
-  useLayoutEffect(() => {
-    const el = field.current;
-    if (!el) return;
-    el.setCssStyles({ height: 'auto' });
-    el.setCssStyles({ height: `${el.scrollHeight + 2}px` });
-    // The card re-measures its content height as the field grows.
-    el.dispatchEvent(new CustomEvent('roseboard-fit', { bubbles: true }));
-  }, [text]);
+  useGrowingField(field, text);
   return (
     <textarea
       ref={field}
@@ -76,7 +100,7 @@ function GrowingField({
   );
 }
 
-/** One-line field for a checklist step. Enter saves; `keepOpen` clears it for the next step. */
+/** Wrapping field for a checklist step. Enter saves; `keepOpen` clears it for the next step. */
 function StepField({
   initial = '',
   label,
@@ -93,24 +117,27 @@ function StepField({
   onClose: () => void;
 }) {
   const [text, setText] = useState(initial);
-  const field = useRef<HTMLInputElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
   const cancelled = useRef(false);
   useEffect(() => {
     field.current?.focus();
     if (initial) field.current?.select();
   }, [initial]);
+  useGrowingField(field, text);
   const save = () => {
     const value = text.trim();
     if (value && value !== initial) onCommit(value);
     return value;
   };
   return (
-    <input
+    <textarea
       ref={field}
-      className="rb-card-field rb-card-step-field nodrag nopan"
+      className="rb-card-field rb-card-step-field nodrag nopan nowheel"
       aria-label={label}
       placeholder={placeholder}
       maxLength={2000}
+      rows={1}
+      data-fit-min="32"
       value={text}
       onChange={(event) => setText(event.target.value)}
       onBlur={() => {
@@ -138,12 +165,12 @@ function StepField({
 
 /** Steps shown before the list scrolls; the card grows to this many rows at most on Show more. */
 const MAX_ROWS = 10;
+const DEFAULT_ROWS = 3;
 
 /**
  * Description and checklist, read and written directly on the task card. The card keeps the size
- * the person gave it: the description fills the room it has, and the checklist is a collapsible
- * section that scrolls. An open checklist always shows at least one step, and Show more asks the
- * view for room for up to ten. Those extra rows are view-only; the saved size never changes.
+ * the person gave it as a minimum, with room reserved for readable text and three checklist rows.
+ * Long content scrolls; Show more reserves up to ten rows. These fitted sizes are view-only.
  */
 export function TaskBody({
   taskId,
@@ -163,9 +190,10 @@ export function TaskBody({
   // 'description', 'new-step', or the ID of the step being renamed.
   const [editing, setEditing] = useState<string>();
   const [open, setOpen] = useState(true);
-  const [rows, setRows] = useState(1);
+  const [rows, setRows] = useState(DEFAULT_ROWS);
   const [hidden, setHidden] = useState(false);
-  const [clamped, setClamped] = useState(false);
+  const [descriptionMinimum, setDescriptionMinimum] = useState(64);
+  const [listMinimum, setListMinimum] = useState(96);
   const preview = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
   const hasDescription = !!task.description.trim();
@@ -173,11 +201,20 @@ export function TaskBody({
   const done = steps.filter((item) => item.done).length;
   const adding = editing === 'new-step';
   const change = (label: string, fn: Change) => editTask(taskId, label, fn);
-  // Whether text or steps are cut off decides the description fade and the Show more button.
+  // Measure wrapped rows, not a nominal line count, so a narrow card keeps useful content visible.
   const measure = () => {
     const text = preview.current,
       items = list.current;
-    setClamped(!!text && text.scrollHeight > text.clientHeight + 1);
+    if (text) setDescriptionMinimum(Math.min(84, Math.max(24, text.firstElementChild?.scrollHeight ?? 0)));
+    if (items) {
+      const visible = [...items.children].slice(0, rows);
+      setListMinimum(
+        Math.min(
+          320,
+          visible.reduce((height, item) => height + (item as HTMLElement).offsetHeight, 0),
+        ),
+      );
+    }
     setHidden(!!items && items.scrollHeight > items.clientHeight + 1);
   };
   useLayoutEffect(measure);
@@ -185,21 +222,27 @@ export function TaskBody({
     const observer = new ResizeObserver(measure);
     if (preview.current) observer.observe(preview.current);
     if (list.current) observer.observe(list.current);
+    for (const item of list.current?.children ?? []) observer.observe(item);
     return () => observer.disconnect();
-  }, [open, hasDescription, steps.length]);
+  }, [open, hasDescription, steps.length, editing, rows]);
   useEffect(() => {
     if (adding) list.current?.scrollTo({ top: list.current.scrollHeight });
   }, [adding, steps.length]);
-  const rowCount = Math.max(1, Math.min(rows, steps.length + (adding || !readOnly ? 1 : 0)));
   const toggleOpen = () => {
     if (open) {
-      setRows(1);
+      setRows(DEFAULT_ROWS);
       if (adding) setEditing(undefined);
     }
     setOpen(!open);
   };
   return (
-    <div className="rb-task-body">
+    <div
+      className="rb-task-body"
+      onKeyDown={(event) => {
+        // Focused content scrolls/selects text; it must not nudge or delete the card.
+        if (!((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z')) event.stopPropagation();
+      }}
+    >
       {editing === 'description' ? (
         <GrowingField
           initial={task.description}
@@ -217,7 +260,11 @@ export function TaskBody({
       ) : hasDescription ? (
         <div
           ref={preview}
-          className={`rb-card-desc rb-fit-min${clamped ? ' is-clamped' : ''}`}
+          className="rb-card-desc rb-fit-min nodrag nopan nowheel"
+          style={{ minHeight: descriptionMinimum }}
+          tabIndex={0}
+          role="region"
+          aria-label="Task description"
           title={readOnly ? undefined : 'Double-click to edit'}
           onDoubleClick={(event) => {
             if (readOnly || (event.target as HTMLElement).closest('a,button')) return;
@@ -242,8 +289,8 @@ export function TaskBody({
       )}
       {(steps.length > 0 || adding) && (
         <section
-          className={`rb-card-steps rb-fit-min${open ? ' is-open' : ''}${open && (hidden || rows > 1) ? ' has-more' : ''}`}
-          style={{ '--rb-rows': rowCount } as CSSProperties}
+          className={`rb-card-steps rb-fit-min${open ? ' is-open' : ''}${open && (hidden || rows > DEFAULT_ROWS) ? ' has-more' : ''}${!readOnly && !adding ? ' can-add' : ''}`}
+          style={{ '--rb-list-height': `${listMinimum}px` } as CSSProperties}
         >
           <button
             className="rb-card-steps-head nodrag"
@@ -264,7 +311,12 @@ export function TaskBody({
             </span>
           </button>
           {open && (
-            <ul ref={list} className="rb-card-checklist nowheel">
+            <ul
+              ref={list}
+              className="rb-card-checklist nodrag nopan nowheel"
+              tabIndex={0}
+              aria-label="Checklist steps"
+            >
               {steps.map((item) => (
                 <li
                   key={item.id}
@@ -273,7 +325,7 @@ export function TaskBody({
                     if (
                       readOnly ||
                       editing === item.id ||
-                      (event.target as HTMLElement).closest('button,input')
+                      (event.target as HTMLElement).closest('button,textarea')
                     )
                       return;
                     event.stopPropagation();
@@ -331,7 +383,7 @@ export function TaskBody({
                   )}
                 </li>
               ))}
-              {adding ? (
+              {adding && (
                 <li className="rb-card-step-new">
                   <span className="rb-card-check" aria-hidden="true">
                     <Icon name="square" />
@@ -348,30 +400,29 @@ export function TaskBody({
                     onClose={() => setEditing(undefined)}
                   />
                 </li>
-              ) : (
-                !readOnly && (
-                  <li className="rb-card-step-add">
-                    <button
-                      className="nodrag"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setEditing('new-step');
-                      }}
-                    >
-                      <Icon name="plus" />
-                      Add step
-                    </button>
-                  </li>
-                )
               )}
             </ul>
           )}
-          {open && (hidden || rows > 1) && (
+          {open && !readOnly && !adding && (
+            <div className="rb-card-step-add">
+              <button
+                className="nodrag"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEditing('new-step');
+                }}
+              >
+                <Icon name="plus" />
+                Add step
+              </button>
+            </div>
+          )}
+          {open && (hidden || rows > DEFAULT_ROWS) && (
             <button
               className="rb-card-steps-more nodrag"
               onClick={(event) => {
                 event.stopPropagation();
-                setRows(hidden && rows < MAX_ROWS ? MAX_ROWS : 1);
+                setRows(hidden && rows < MAX_ROWS ? MAX_ROWS : DEFAULT_ROWS);
               }}
             >
               {hidden && rows < MAX_ROWS ? 'Show more' : 'Show less'}

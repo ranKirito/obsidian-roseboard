@@ -552,7 +552,9 @@ class RoseboardView extends ItemView {
         if (
           !target ||
           !this.contentEl.contains(target) ||
-          target.closest('input,textarea,select,[contenteditable="true"]')
+          target.closest('input,textarea,select,[contenteditable="true"]') ||
+          // Obsidian's scope runs before React: focused card content must keep text/scroll keys.
+          (target.closest('.rb-task-body') && action !== 'undo' && action !== 'redo')
         )
           return;
         if (!this.dispatch(action)) return;

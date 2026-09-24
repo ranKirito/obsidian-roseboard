@@ -131,7 +131,7 @@ try {
     assert.ok((await root().locator('.rb-icon svg').count()) > 10, 'Lucide icons render');
     await page.screenshot({ path: 'docs/roseboard-desktop.png' });
   });
-  await test('Task cards keep their size: checklists scroll, collapse, show more on request, and cards resize smaller', async () => {
+  await test('Small task cards reserve readable descriptions and wrapped steps; scrolling and expansion preserve saved size', async () => {
     const welcome = 'Welcome to Roseboard.md';
     const card = root().locator('[data-id="node-sketch"]');
     const steps = () => board(welcome).then((b) => b.tasks.sketch.checklist.map((c) => c.done));
@@ -140,49 +140,106 @@ try {
     assert.deepEqual(await steps(), [true, true, false]);
     await action('Undo');
     assert.deepEqual(await steps(), [true, false, false]);
-    const saved = (await board(welcome)).nodes['node-sketch'].height;
+    const original = (await board(welcome)).nodes['node-sketch'];
+    await page.evaluate(
+      `${session(welcome)}.edit('Readability probe', (b) => {
+        b.nodes['node-sketch'].width = 260;
+        b.nodes['node-sketch'].height = 120;
+        b.tasks.sketch.description = 'A readable description with useful context and details. '.repeat(25) + 'END OF DESCRIPTION';
+        b.tasks.sketch.checklist[0].text = 'A longer checklist step that wraps onto several lines in a narrow task card';
+        for (let i = 0; i < 9; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false });
+      })`,
+    );
     const shown = () => card.evaluate((el) => el.offsetHeight);
     const list = () =>
-      card
-        .locator('.rb-card-checklist')
-        .evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
-    const initial = await shown();
-    assert.equal(initial, saved, 'the card keeps the size it was given');
-    // More steps scroll inside the card instead of growing it.
-    await page.evaluate(
-      `${session(welcome)}.edit('Add steps', (b) => { for (let i = 0; i < 9; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false }); })`,
-    );
-    await eventually(async () => {
+      card.locator('.rb-card-checklist').evaluate((el) => ({
+        client: el.clientHeight,
+        scroll: el.scrollHeight,
+        firstThree: [...el.children].slice(0, 3).reduce((h, row) => h + row.offsetHeight, 0),
+      }));
+    const readable = async () => {
+      const description = await card.locator('.rb-card-desc').evaluate((el) => ({
+        height: el.clientHeight,
+        scroll: el.scrollHeight,
+        mask: getComputedStyle(el).maskImage,
+        bottom: el.getBoundingClientRect().bottom,
+        next: el.nextElementSibling.getBoundingClientRect().top,
+      }));
+      assert.ok(description.height >= 84, JSON.stringify(description));
+      assert.ok(description.scroll > description.height);
+      assert.equal(description.mask, 'none', 'readable text must never fade away');
+      assert.ok(description.bottom <= description.next, 'description and checklist do not overlap');
       const l = await list();
-      assert.ok(l.scroll > l.client + 20, JSON.stringify(l));
+      assert.ok(l.client >= Math.min(320, l.firstThree), JSON.stringify(l));
+      assert.ok(l.scroll > l.client);
+    };
+    await eventually(readable);
+    const initial = await shown();
+    assert.ok(initial > 120, 'old tiny cards grow only in the view');
+    assert.equal((await board(welcome)).nodes['node-sketch'].height, 120);
+    await card.locator('.rb-card-title strong').click();
+    await root().getByRole('button', { name: 'Close inspector', exact: true }).click();
+    const position = (await board(welcome)).nodes['node-sketch'];
+    await card.locator('.rb-card-desc').focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Backspace');
+    await card.locator('.rb-card-checklist').focus();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Delete');
+    assert.deepEqual(
+      (await board(welcome)).nodes['node-sketch'],
+      position,
+      'focused content does not move or delete the selected card',
+    );
+    await card.locator('.rb-card-desc').evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
     });
-    assert.equal(await shown(), initial);
-    // Show more asks the view for ten rows; the saved size does not change. Show less returns.
+    assert.ok(await card.locator('.rb-card-desc').evaluate((el) => el.scrollTop > 0));
+    await card.locator('.rb-card-desc').evaluate((el) => {
+      el.scrollTop = 0;
+    });
     await card.getByRole('button', { name: 'Show more', exact: true }).click();
-    await eventually(async () => assert.equal((await list()).client, 240));
+    await eventually(async () => assert.equal((await list()).client, 320));
     assert.ok((await shown()) > initial);
-    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved, 'extra rows are view-only');
+    assert.equal((await board(welcome)).nodes['node-sketch'].height, 120, 'expansion is view-only');
     await card.getByRole('button', { name: 'Show less', exact: true }).click();
     await eventually(async () => assert.equal(await shown(), initial));
-    // The checklist collapses to its header and opens again.
     await card.getByRole('button', { name: /^Hide checklist/ }).click();
     assert.equal(await card.locator('.rb-card-checklist').count(), 0);
     await card.getByRole('button', { name: /^Show checklist, 1 of 12 done/ }).click();
-    // Cards resize below their content; an open checklist still shows at least one step.
+    await eventually(readable);
+    // The persistent Add step action stays outside the scrolling list; long edits wrap.
+    await card.locator('.rb-card-step-add button').click();
+    const field = card.getByLabel('New step', { exact: true });
+    await field.fill(
+      'A long editable checklist item with enough detail to wrap onto several lines in this narrow card. '.repeat(
+        3,
+      ),
+    );
+    assert.ok(await field.evaluate((el) => el.clientHeight >= el.scrollHeight - 2));
+    assert.ok(await field.evaluate((el) => el.clientHeight > 40));
+    await field.press('Escape');
+    await eventually(readable);
+    // Dragging below the readable minimum must not hide either content region.
     await root()
       .locator('.react-flow__pane')
       .click({ position: { x: 20, y: 20 } });
     const box = await card.boundingBox();
     await page.mouse.move(box.x + box.width * 0.3, box.y + box.height);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height - 160, { steps: 10 });
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height - 180, { steps: 10 });
     await page.mouse.up();
-    await eventually(async () => assert.ok((await board(welcome)).nodes['node-sketch'].height < saved - 60));
-    assert.ok((await list()).client >= 24);
-    await action('Undo');
+    await eventually(readable);
+    assert.ok((await shown()) >= initial - 2, 'resize enforces the readable minimum');
+    await card.locator('.rb-card-checklist').evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await page.screenshot({ path: 'docs/roseboard-card-readability.png' });
+    // Restore both the synthetic content and any resize command.
+    if ((await board(welcome)).nodes['node-sketch'].height !== 120) await action('Undo');
     await action('Undo');
     await eventually(async () => assert.equal((await board(welcome)).tasks.sketch.checklist.length, 3));
-    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved);
+    assert.deepEqual((await board(welcome)).nodes['node-sketch'], original);
   });
   await test('Selection actions never overlap the zoom controls, with or without the inspector', async () => {
     const rects = async () => ({

@@ -1,5 +1,14 @@
 # Roseboard — implementation and test reports
 
+## 1.5.3 card readability fix — 2026-09-24
+
+**100/100 automated checks and 37/37 isolated desktop Obsidian canvas scenarios pass**, with no captured renderer errors. TypeScript checking, schema generation and the production build pass. The 1.5.3 package retains the exact JavaScript and CSS bytes tested after 1.5.2; only version metadata changed afterward. No real-vault installation is included. The planner suite and physical mobile devices were not retested for this change.
+
+- A task saved at 260 × 120 px with a long description, a wrapped first step and 12 checklist items grows in the view. The description retains at least 84 px with no fade and can scroll to its end. The checklist reserves three actual wrapped rows (capped at 320 px), without overlapping the description.
+- Show more/less and collapse/reopen preserve the saved dimensions. Dragging the bottom edge upward cannot hide the readable content. Undo restores the original fixture's content, dimensions and coordinates.
+- Add step remains outside the scrolling list. Long step edits wrap and grow; Enter, Escape, checkbox changes and persistence pass the on-card editing scenario. Focused descriptions and checklists accept navigation and Delete/Backspace without moving or deleting the selected card.
+- Reviewed the actual Obsidian screenshot: [small-card readability](roseboard-card-readability.png). The wider canvas regression suite also covers narrow desktop viewports, resize handles, note references, undo, merging, conflicts and the 300-node fixture.
+
 ## 1.5.2 — 2026-09-24
 
 **100/100 automated checks and 60/60 isolated Obsidian scenarios pass** (37 canvas, 23 planner/document), with no renderer errors. The 1.5.2 package contains the exact `main.js` and `styles.css` bytes exercised by these tests; only version metadata changed afterward.

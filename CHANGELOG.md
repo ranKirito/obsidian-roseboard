@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.3 — 2026-09-24
+
+- Fixed task-card descriptions shrinking to a faded, unreadable line. Cards reserve up to four lines for the description; longer text scrolls without a fade, including in read-only views.
+- Small cards grow to a readable minimum in the current view. Open checklists reserve three wrapped rows (up to 320 px); Show more reserves up to ten. Resizing respects this minimum, while automatic fitting leaves saved sizes and positions unchanged.
+- Checklist rows have more spacing, a separate header, and an always-visible Add step action outside the scrolling list. Step editors wrap and grow with their text and card width. Keyboard navigation inside card content no longer moves or deletes the card.
+
 ## 1.5.2 — 2026-09-24
 
 - Task cards keep the size you give them and can be resized smaller than their content again. Content height no longer sets a minimum, except that an open checklist shows at least one step.
