@@ -166,11 +166,12 @@ function StepField({
 /** Steps shown before the list scrolls; the card grows to this many rows at most on Show more. */
 const MAX_ROWS = 10;
 const DEFAULT_ROWS = 3;
+const DESCRIPTION_PREVIEW_HEIGHT = 84;
 
 /**
  * Description and checklist, read and written directly on the task card. The card keeps the size
- * the person gave it as a minimum, with room reserved for readable text and three checklist rows.
- * Long content scrolls; Show more reserves up to ten rows. These fitted sizes are view-only.
+ * the person gave it as a minimum. Descriptions have a fixed preview or expand in full; checklists
+ * start collapsed and reserve three wrapped rows when opened. Fitted sizes are view-only.
  */
 export function TaskBody({
   taskId,
@@ -189,9 +190,10 @@ export function TaskBody({
 }) {
   // 'description', 'new-step', or the ID of the step being renamed.
   const [editing, setEditing] = useState<string>();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [rows, setRows] = useState(DEFAULT_ROWS);
-  const [descriptionMinimum, setDescriptionMinimum] = useState(64);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_PREVIEW_HEIGHT);
   const [listMinimum, setListMinimum] = useState(96);
   const preview = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLUListElement>(null);
@@ -199,12 +201,17 @@ export function TaskBody({
   const steps = task.checklist;
   const done = steps.filter((item) => item.done).length;
   const adding = editing === 'new-step';
+  const longDescription = descriptionHeight > DESCRIPTION_PREVIEW_HEIGHT;
+  const shownDescriptionHeight = descriptionExpanded
+    ? Math.max(DESCRIPTION_PREVIEW_HEIGHT, descriptionHeight)
+    : DESCRIPTION_PREVIEW_HEIGHT;
   const change = (label: string, fn: Change) => editTask(taskId, label, fn);
   // Measure wrapped rows, not a nominal line count, so a narrow card keeps useful content visible.
   const measure = () => {
     const text = preview.current,
       items = list.current;
-    if (text) setDescriptionMinimum(Math.min(84, Math.max(24, text.firstElementChild?.scrollHeight ?? 0)));
+    // Measure the unrestricted Markdown child, never the clipped/expanded preview box itself.
+    if (text) setDescriptionHeight(text.firstElementChild?.scrollHeight ?? 0);
     if (items) {
       const visible = [...items.children].slice(0, rows);
       setListMinimum(
@@ -215,10 +222,10 @@ export function TaskBody({
       );
     }
   };
-  useLayoutEffect(measure);
+  useLayoutEffect(measure, [task.description, steps, rows, editing, open]);
   useEffect(() => {
     const observer = new ResizeObserver(measure);
-    if (preview.current) observer.observe(preview.current);
+    if (preview.current?.firstElementChild) observer.observe(preview.current.firstElementChild);
     if (list.current) observer.observe(list.current);
     for (const item of list.current?.children ?? []) observer.observe(item);
     return () => observer.disconnect();
@@ -256,22 +263,40 @@ export function TaskBody({
           onCancel={() => setEditing(undefined)}
         />
       ) : hasDescription ? (
-        <div
-          ref={preview}
-          className="rb-card-desc rb-fit-min nodrag nopan nowheel"
-          style={{ minHeight: descriptionMinimum }}
-          tabIndex={0}
-          role="region"
-          aria-label="Task description"
-          title={readOnly ? undefined : 'Double-click to edit'}
-          onDoubleClick={(event) => {
-            if (readOnly || (event.target as HTMLElement).closest('a,button')) return;
-            event.stopPropagation();
-            setEditing('description');
-          }}
+        <section
+          className={`rb-card-description rb-fit-min${descriptionExpanded ? ' is-expanded' : ''}`}
+          style={{ minHeight: shownDescriptionHeight + (longDescription ? 26 : 0) }}
         >
-          <Markdown text={task.description} host={host} />
-        </div>
+          <div
+            ref={preview}
+            className="rb-card-desc nodrag nopan"
+            style={{ height: shownDescriptionHeight }}
+            tabIndex={0}
+            role="region"
+            aria-label="Task description"
+            title={readOnly ? undefined : 'Double-click to edit'}
+            onDoubleClick={(event) => {
+              if (readOnly || (event.target as HTMLElement).closest('a,button')) return;
+              event.stopPropagation();
+              setEditing('description');
+            }}
+          >
+            <Markdown text={task.description} host={host} />
+          </div>
+          {longDescription && (
+            <button
+              className="rb-card-desc-more nodrag"
+              aria-expanded={descriptionExpanded}
+              aria-label={descriptionExpanded ? 'Show less description' : 'Show more description'}
+              onClick={(event) => {
+                event.stopPropagation();
+                setDescriptionExpanded(!descriptionExpanded);
+              }}
+            >
+              {descriptionExpanded ? 'Show less' : 'Show more'}
+            </button>
+          )}
+        </section>
       ) : (
         !readOnly && (
           <button

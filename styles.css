@@ -1380,16 +1380,20 @@
  * in, level with the title.
  */
 /*
- * Reserve up to four lines before shrinking the card. Longer descriptions scroll without fading
- * the text, and remain readable without opening an editor (including in read-only boards).
+ * Descriptions reserve four lines at every zoom. Expansion fits the full Markdown without scrolling.
  */
+.roseboard-root .rb-card-description {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.roseboard-root .rb-card-description.is-expanded .rb-card-desc-more {
+  order: -1;
+}
 .roseboard-root .rb-card-desc {
-  flex: 0 1 auto;
-  min-height: 64px;
-  max-height: calc(13px * 1.55 * 6 + 2px);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  overscroll-behavior: contain;
+  flex-shrink: 0;
+  overflow: clip;
   padding-left: 30px;
   color: #cfcfd9;
   cursor: text;
@@ -1499,7 +1503,8 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
-.roseboard-root .rb-card-steps-more {
+.roseboard-root .rb-card-steps-more,
+.roseboard-root .rb-card-desc-more {
   align-self: flex-start;
   flex-shrink: 0;
   height: 22px;
@@ -1511,7 +1516,8 @@
   color: var(--rb-pink-soft);
   font-size: 11.5px;
 }
-.roseboard-root .rb-card-steps-more:hover {
+.roseboard-root .rb-card-steps-more:hover,
+.roseboard-root .rb-card-desc-more:hover {
   background: #f472b614;
 }
 .roseboard-root .rb-card-checklist {
@@ -1675,13 +1681,6 @@
 }
 .roseboard-root .rb-card-step-add {
   flex-shrink: 0;
-}
-.roseboard-root .rb-card-desc::-webkit-scrollbar {
-  width: 6px;
-}
-.roseboard-root .rb-card-desc::-webkit-scrollbar-thumb {
-  border-radius: 3px;
-  background: #3a3a45;
 }
 .roseboard-root .rb-card-desc:focus-visible,
 .roseboard-root .rb-card-checklist:focus-visible {

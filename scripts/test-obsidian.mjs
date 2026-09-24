@@ -109,6 +109,10 @@ try {
   if (await page.locator('.modal-close-button').count())
     await page.locator('.modal-close-button').last().click();
   await page.evaluate(async () => {
+    // A fresh disposable profile starts in restricted mode even when its vault lists the plugin.
+    await app.plugins.loadManifests();
+    await app.plugins.setEnable(true);
+    await app.plugins.enablePlugin('roseboard');
     const plugin = app.plugins.plugins.roseboard;
     Object.assign(plugin.settings, {
       snap: false,
@@ -133,10 +137,12 @@ try {
     assert.ok((await root().locator('.rb-icon svg').count()) > 10, 'Lucide icons render');
     await page.screenshot({ path: 'docs/roseboard-desktop.png' });
   });
-  await test('Small task cards reserve readable descriptions and wrapped steps; scrolling and expansion preserve saved size', async () => {
+  await test('Descriptions have a fixed non-scrolling preview and expand fully; checklists start collapsed', async () => {
     const welcome = 'Welcome to Roseboard.md';
     const card = root().locator('[data-id="node-sketch"]');
     const steps = () => board(welcome).then((b) => b.tasks.sketch.checklist.map((c) => c.done));
+    assert.equal(await card.locator('.rb-card-checklist').count(), 0, 'checklist starts collapsed');
+    await card.getByRole('button', { name: /^Show checklist/ }).click();
     assert.equal(await card.locator('.rb-card-checklist').getByRole('checkbox').count(), 3);
     await card.getByRole('checkbox', { name: 'Complete step Sketch two directions' }).click();
     assert.deepEqual(await steps(), [true, true, false]);
@@ -147,7 +153,7 @@ try {
       `${session(welcome)}.edit('Readability probe', (b) => {
         b.nodes['node-sketch'].width = 260;
         b.nodes['node-sketch'].height = 120;
-        b.tasks.sketch.description = 'A readable description with useful context and details. '.repeat(25) + 'END OF DESCRIPTION';
+        b.tasks.sketch.description = 'A readable description with useful context and details. '.repeat(80) + 'END OF DESCRIPTION';
         b.tasks.sketch.checklist[0].text = 'A longer checklist step that wraps onto several lines in a narrow task card';
         for (let i = 0; i < 9; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false });
       })`,
@@ -167,7 +173,7 @@ try {
         bottom: el.getBoundingClientRect().bottom,
         next: el.nextElementSibling.getBoundingClientRect().top,
       }));
-      assert.ok(description.height >= 84, JSON.stringify(description));
+      assert.equal(description.height, 84, 'description preview has a fixed height');
       assert.ok(description.scroll > description.height);
       assert.equal(description.mask, 'none', 'readable text must never fade away');
       assert.ok(description.bottom <= description.next, 'description and checklist do not overlap');
@@ -196,10 +202,23 @@ try {
     await card.locator('.rb-card-desc').evaluate((el) => {
       el.scrollTop = el.scrollHeight;
     });
-    assert.ok(await card.locator('.rb-card-desc').evaluate((el) => el.scrollTop > 0));
-    await card.locator('.rb-card-desc').evaluate((el) => {
-      el.scrollTop = 0;
-    });
+    assert.equal(
+      await card.locator('.rb-card-desc').evaluate((el) => el.scrollTop),
+      0,
+      'preview cannot scroll',
+    );
+    await card.getByRole('button', { name: 'Show more description', exact: true }).click();
+    await eventually(async () =>
+      assert.ok(await card.locator('.rb-card-desc').evaluate((el) => el.clientHeight >= el.scrollHeight)),
+    );
+    assert.ok((await shown()) > 1600, 'full descriptions are not cut off by the old card-height limit');
+    assert.equal(
+      (await board(welcome)).nodes['node-sketch'].height,
+      120,
+      'description expansion is view-only',
+    );
+    await card.getByRole('button', { name: 'Show less description', exact: true }).click();
+    await eventually(readable);
     await card.getByRole('button', { name: 'Show more', exact: true }).click();
     await eventually(async () => assert.equal((await list()).client, 320));
     assert.ok((await shown()) > initial);
@@ -298,6 +317,7 @@ try {
       [name, source],
     );
     await open(name);
+    assert.equal(await root().locator('.rb-card-checklist').count(), 0);
     const check = async () => {
       await root().getByLabel('Reset zoom', { exact: true }).click();
       await eventually(async () =>
@@ -314,6 +334,23 @@ try {
       assert.equal(await sourceText(name), source, 'rendering never rewrites saved board data');
     };
     await check();
+    // Explicitly cross the old 50% detail threshold: descriptions and open checklist state survive.
+    const descCount = await root().locator('.rb-card-desc').count();
+    const firstChecklist = root()
+      .getByRole('button', { name: /^Show checklist/ })
+      .first();
+    await firstChecklist.click();
+    for (let i = 0; i < 6; i++) await root().getByLabel('Zoom out', { exact: true }).click();
+    await eventually(async () => assert.ok(parseInt(await zoomLabel(), 10) < 50));
+    assert.equal(await root().locator('.rb-card-desc').count(), descCount);
+    assert.equal(
+      await root().locator('.rb-card-checklist').count(),
+      1,
+      'zoom does not reset checklist expansion',
+    );
+    await root()
+      .getByRole('button', { name: /^Hide checklist/ })
+      .click();
     await root().getByLabel('Fit all', { exact: true }).click();
     await check();
     await open('Welcome to Roseboard.md');
@@ -517,8 +554,20 @@ try {
   });
   await test('Double-click on empty canvas creates a task there; context menu completes it', async () => {
     const countBefore = Object.keys((await board(path)).tasks).length;
-    const pane = await root().locator('.react-flow__pane').boundingBox();
-    await page.mouse.dblclick(pane.x + pane.width * 0.7, pane.y + pane.height * 0.75);
+    const empty = await root()
+      .locator('.react-flow__pane')
+      .evaluate((pane) => {
+        const rect = pane.getBoundingClientRect();
+        for (const fx of [0.25, 0.75, 0.1, 0.9]) {
+          for (const fy of [0.3, 0.65, 0.85]) {
+            const x = rect.x + rect.width * fx,
+              y = rect.y + rect.height * fy;
+            if (document.elementFromPoint(x, y) === pane) return { x, y };
+          }
+        }
+        throw new Error('No empty canvas point found');
+      });
+    await page.mouse.dblclick(empty.x, empty.y);
     await eventually(async () =>
       assert.equal(Object.keys((await board(path)).tasks).length, countBefore + 1),
     );

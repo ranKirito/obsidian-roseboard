@@ -1,24 +1,24 @@
 {
-  "verifiedAt": "2026-09-24T16:15:54.496710+00:00",
-  "version": "1.5.4",
-  "archive": "release/roseboard-1.5.4.zip",
-  "archiveSHA256": "9cd05607bbfe236905c641f5396936d4212d23402a95f59065c0583000caab84",
+  "verifiedAt": "2026-09-24T16:31:57.051185+00:00",
+  "version": "1.5.5",
+  "archive": "release/roseboard-1.5.5.zip",
+  "archiveSHA256": "f98379cebc667240357bf77becfb084b241d7ae45fbe756ff5c7e92a2c909708",
   "checks": {
     "main.js": {
-      "sha256": "731abb0833995f39540dcbb05d48ec524d8f116aa9c2a008112d605aff65d79c",
+      "sha256": "671363c9c46b890387e4c36e59d5310df0793e2eebb765a77179793315246a96",
       "matchesIntegrationTestedBuild": true
     },
     "styles.css": {
-      "sha256": "5c06f350bb94b04673446c6105cd42df1cd4d6f6b03d40e9e69c39a2d6dcd70f",
+      "sha256": "feeecec7bf036fe6e3f28a66a83bc548d26c31dfea6d2d8998677a19dd17313b",
       "matchesIntegrationTestedBuild": true
     },
     "manifest.json": {
-      "sha256": "a18a2ee7ac0fa44f9f03afdcefa47d52a131866e0bb05bc65f8933fcb927dcf7",
+      "sha256": "f6990ddf2705a9e17591901822cbcf00748234565d862edf0b3d6223b5dc421d",
       "matchesIntegrationTestedBuild": true
     }
   },
   "automatedTests": 100,
   "isolatedObsidianScenarios": 38,
   "rendererErrors": 0,
-  "note": "The release files exactly match the isolated integration-tested build. The reported crash was also reproduced with an existing board and verified fixed in its existing vault, with theme and plugins active; all 768 protected Markdown files remained unchanged. Private board content and screenshots are excluded from public fixtures."
+  "note": "Release files exactly match the isolated integration-tested build. A private copy of an existing 14-node board with its Things theme retained all 12 description previews at 100% and 32% zoom, default-collapsed checklists, full description expansion and unchanged board bytes. Private content and screenshots are excluded from public fixtures. No real-vault installation is included in this patch verification."
 }

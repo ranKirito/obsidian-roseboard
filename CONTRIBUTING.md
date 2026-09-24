@@ -1,6 +1,6 @@
 # Contributing to Roseboard
 
-Feedback goes to [GitHub Issues](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose). The supported release is **1.5.4**.
+Feedback goes to [GitHub Issues](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose). The supported release is **1.5.5**.
 
 For bugs, include the Obsidian and Roseboard versions, device/OS, reproduction steps, expected behavior and actual behavior. A small synthetic board is better than an entire personal vault. Remove private notes, file paths and credentials from attachments.
 

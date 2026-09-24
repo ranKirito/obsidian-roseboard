@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.5 — 2026-09-24
+
+- Descriptions stay visible at every zoom level. Each nonempty description has a fixed four-line preview and never scrolls. Show more expands the full text; Show less stays at the top so long descriptions are easy to collapse.
+- Checklists start collapsed, with their progress header visible. Opening a checklist is an explicit action, and zooming preserves that choice.
+- Full descriptions can grow past the old 1,600 px card limit. Expansion remains view-only and does not rewrite saved sizes or board content.
+
 ## 1.5.4 — 2026-09-24
 
 - Fixed a repeated layout update that could crash the Roseboard view and leave it black on existing boards with wrapped checklists. Show more/less no longer depends on the overflow that the control itself changes.

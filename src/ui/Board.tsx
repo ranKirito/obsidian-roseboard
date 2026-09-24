@@ -81,7 +81,6 @@ const RECENT_MS = 4500;
 const READ_WIDTH = 540;
 const READ_HEIGHT = 460;
 const READ_MAX_HEIGHT = 900;
-const CARD_MAX_HEIGHT = 1600;
 type Mode = 'canvas' | 'list' | 'kanban' | 'day' | 'calendar';
 const views: { mode: Mode; label: string; icon: string }[] = [
   { mode: 'canvas', label: 'Canvas', icon: 'layout-dashboard' },
@@ -388,7 +387,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
           const height = expanded
             ? Math.max(node.height, Math.min(fitted ?? READ_HEIGHT, READ_MAX_HEIGHT))
             : node.type === 'task' && fitted
-              ? Math.max(node.height, Math.min(fitted, CARD_MAX_HEIGHT))
+              ? Math.max(node.height, fitted)
               : node.height;
           const data: CardData = {
             node,

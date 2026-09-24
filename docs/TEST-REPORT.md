@@ -1,5 +1,15 @@
 # Roseboard — implementation and test reports
 
+## 1.5.5 description previews and collapsed checklists — 2026-09-24
+
+**100/100 automated checks and 38/38 isolated desktop Obsidian scenarios pass**, with no captured renderer errors. TypeScript checking and the production build pass. The package contains the exact JavaScript, CSS and manifest exercised by the integration suite.
+
+- Every nonempty task description reserves an 84 px preview, approximately four lines. The preview cannot scroll, including through keyboard or programmatic scrolling. Show more displays the entire description, including content taller than the former 1,600 px card limit; Show less restores the preview. Saved card dimensions remain unchanged.
+- Checklists start collapsed with their progress header visible. Opening one and zooming below 50% preserves that choice. Descriptions remain mounted at low zoom and small saved cards grow only in the view.
+- Tested a private copy of an existing 14-node board from the reported vault with its Things theme. All 12 descriptions remain visible with 84 px previews at 100% and 32% zoom, with zero open checklist lists and zero renderer errors. Expansion/collapse passed and the copied board stayed byte-identical. The source vault was not edited; private content and screenshots remain local only.
+- The previous black-board regression also passes through zoom and tab changes with stable card heights and unchanged board bytes. Reviewed the existing-board screenshot and the synthetic [card readability screenshot](roseboard-card-readability.png).
+- Planner-specific scenarios, physical mobile hardware and peer-device sync were not retested for this patch.
+
 ## 1.5.4 black-board crash fix — 2026-09-24
 
 **100/100 automated checks and 38/38 isolated desktop Obsidian scenarios pass**, with no captured renderer errors. The package contains the exact JavaScript and CSS exercised by the integration suite.

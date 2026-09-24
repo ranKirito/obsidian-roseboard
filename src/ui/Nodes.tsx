@@ -284,16 +284,14 @@ export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
               </strong>
             )}
           </div>
-          {!minimal && (
-            <TaskBody
-              taskId={node.taskId}
-              task={task}
-              host={host}
-              readOnly={readOnly}
-              editTask={data.editTask}
-              toggleCheck={data.toggleCheck}
-            />
-          )}
+          <TaskBody
+            taskId={node.taskId}
+            task={task}
+            host={host}
+            readOnly={readOnly}
+            editTask={data.editTask}
+            toggleCheck={data.toggleCheck}
+          />
           {!minimal && (
             <div className="rb-card-meta">
               {task.assignee && (
