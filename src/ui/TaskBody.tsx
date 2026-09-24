@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Draft } from 'immer';
 import { newId, type Task } from '../domain/model';
 import type { BoardHost } from './ports';
@@ -136,9 +136,14 @@ function StepField({
   );
 }
 
+/** Steps shown before the list scrolls; the card grows to this many rows at most on Show more. */
+const MAX_ROWS = 10;
+
 /**
- * Description and checklist, read and written directly on the task card. Each save is one board
- * edit, so undo, edit stamps and the merge apply as they do for inspector edits.
+ * Description and checklist, read and written directly on the task card. The card keeps the size
+ * the person gave it: the description fills the room it has, and the checklist is a collapsible
+ * section that scrolls. An open checklist always shows at least one step, and Show more asks the
+ * view for room for up to ten. Those extra rows are view-only; the saved size never changes.
  */
 export function TaskBody({
   taskId,
@@ -157,15 +162,42 @@ export function TaskBody({
 }) {
   // 'description', 'new-step', or the ID of the step being renamed.
   const [editing, setEditing] = useState<string>();
-  const hasDescription = !!task.description.trim();
-  const preview = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(true);
+  const [rows, setRows] = useState(1);
+  const [hidden, setHidden] = useState(false);
   const [clamped, setClamped] = useState(false);
-  useLayoutEffect(() => {
-    const el = preview.current;
-    setClamped(!!el && el.scrollHeight > el.clientHeight + 1);
-  });
+  const preview = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLUListElement>(null);
+  const hasDescription = !!task.description.trim();
   const steps = task.checklist;
+  const done = steps.filter((item) => item.done).length;
+  const adding = editing === 'new-step';
   const change = (label: string, fn: Change) => editTask(taskId, label, fn);
+  // Whether text or steps are cut off decides the description fade and the Show more button.
+  const measure = () => {
+    const text = preview.current,
+      items = list.current;
+    setClamped(!!text && text.scrollHeight > text.clientHeight + 1);
+    setHidden(!!items && items.scrollHeight > items.clientHeight + 1);
+  };
+  useLayoutEffect(measure);
+  useEffect(() => {
+    const observer = new ResizeObserver(measure);
+    if (preview.current) observer.observe(preview.current);
+    if (list.current) observer.observe(list.current);
+    return () => observer.disconnect();
+  }, [open, hasDescription, steps.length]);
+  useEffect(() => {
+    if (adding) list.current?.scrollTo({ top: list.current.scrollHeight });
+  }, [adding, steps.length]);
+  const rowCount = Math.max(1, Math.min(rows, steps.length + (adding || !readOnly ? 1 : 0)));
+  const toggleOpen = () => {
+    if (open) {
+      setRows(1);
+      if (adding) setEditing(undefined);
+    }
+    setOpen(!open);
+  };
   return (
     <div className="rb-task-body">
       {editing === 'description' ? (
@@ -182,116 +214,170 @@ export function TaskBody({
           }}
           onCancel={() => setEditing(undefined)}
         />
+      ) : hasDescription ? (
+        <div
+          ref={preview}
+          className={`rb-card-desc rb-fit-min${clamped ? ' is-clamped' : ''}`}
+          title={readOnly ? undefined : 'Double-click to edit'}
+          onDoubleClick={(event) => {
+            if (readOnly || (event.target as HTMLElement).closest('a,button')) return;
+            event.stopPropagation();
+            setEditing('description');
+          }}
+        >
+          <Markdown text={task.description} host={host} />
+        </div>
       ) : (
-        hasDescription && (
-          <div
-            ref={preview}
-            className={`rb-card-desc${clamped ? ' is-clamped' : ''}`}
-            title={readOnly ? undefined : 'Double-click to edit'}
-            onDoubleClick={(event) => {
-              if (readOnly || (event.target as HTMLElement).closest('a,button')) return;
+        !readOnly && (
+          <button
+            className="rb-card-desc-empty nodrag"
+            onClick={(event) => {
               event.stopPropagation();
               setEditing('description');
             }}
           >
-            <Markdown text={task.description} host={host} />
-          </div>
+            Add a description…
+          </button>
         )
       )}
-      {(steps.length > 0 || editing === 'new-step') && (
-        <ul className="rb-card-checklist">
-          {steps.map((item) => (
-            <li
-              key={item.id}
-              className={item.done ? 'is-done' : ''}
-              onDoubleClick={(event) => {
-                if (readOnly || editing === item.id || (event.target as HTMLElement).closest('button,input'))
-                  return;
-                event.stopPropagation();
-                setEditing(item.id);
-              }}
-            >
-              <button
-                className="rb-card-check nodrag"
-                role="checkbox"
-                aria-checked={item.done}
-                aria-label={`${item.done ? 'Reopen' : 'Complete'} step ${item.text}`}
-                disabled={readOnly}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  toggleCheck(taskId, item.id);
-                }}
-              >
-                <Icon name={item.done ? 'square-check' : 'square'} />
-              </button>
-              {editing === item.id ? (
-                <StepField
-                  initial={item.text}
-                  label="Edit step"
-                  placeholder="Step"
-                  onCommit={(text) =>
-                    change('Edit checklist', (t) => {
-                      const step = t.checklist.find((c) => c.id === item.id);
-                      if (step) step.text = text;
-                    })
-                  }
-                  onClose={() => setEditing(undefined)}
-                />
-              ) : (
-                <span className="rb-card-step-text" title={readOnly ? undefined : 'Double-click to rename'}>
-                  {item.text.trim() || 'Untitled step'}
-                </span>
-              )}
-              {!readOnly && editing !== item.id && (
-                <button
-                  className="rb-card-step-remove nodrag"
-                  aria-label={`Remove step ${item.text}`}
-                  title="Remove step"
-                  onClick={(event) => {
+      {(steps.length > 0 || adding) && (
+        <section
+          className={`rb-card-steps rb-fit-min${open ? ' is-open' : ''}${open && (hidden || rows > 1) ? ' has-more' : ''}`}
+          style={{ '--rb-rows': rowCount } as CSSProperties}
+        >
+          <button
+            className="rb-card-steps-head nodrag"
+            aria-expanded={open}
+            aria-label={`${open ? 'Hide' : 'Show'} checklist, ${done} of ${steps.length} done`}
+            onClick={(event) => {
+              event.stopPropagation();
+              toggleOpen();
+            }}
+          >
+            <Icon name="chevron-right" className="rb-card-steps-chevron" />
+            <span>Checklist</span>
+            <span className="rb-card-steps-count">
+              {done}/{steps.length}
+            </span>
+            <span className="rb-progress-bar" aria-hidden="true">
+              <span style={{ width: `${steps.length ? Math.round((done / steps.length) * 100) : 0}%` }} />
+            </span>
+          </button>
+          {open && (
+            <ul ref={list} className="rb-card-checklist nowheel">
+              {steps.map((item) => (
+                <li
+                  key={item.id}
+                  className={item.done ? 'is-done' : ''}
+                  onDoubleClick={(event) => {
+                    if (
+                      readOnly ||
+                      editing === item.id ||
+                      (event.target as HTMLElement).closest('button,input')
+                    )
+                      return;
                     event.stopPropagation();
-                    change('Remove checklist item', (t) => {
-                      t.checklist = t.checklist.filter((c) => c.id !== item.id);
-                    });
+                    setEditing(item.id);
                   }}
                 >
-                  <Icon name="x" />
-                </button>
+                  <button
+                    className="rb-card-check nodrag"
+                    role="checkbox"
+                    aria-checked={item.done}
+                    aria-label={`${item.done ? 'Reopen' : 'Complete'} step ${item.text}`}
+                    disabled={readOnly}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleCheck(taskId, item.id);
+                    }}
+                  >
+                    <Icon name={item.done ? 'square-check' : 'square'} />
+                  </button>
+                  {editing === item.id ? (
+                    <StepField
+                      initial={item.text}
+                      label="Edit step"
+                      placeholder="Step"
+                      onCommit={(text) =>
+                        change('Edit checklist', (t) => {
+                          const step = t.checklist.find((c) => c.id === item.id);
+                          if (step) step.text = text;
+                        })
+                      }
+                      onClose={() => setEditing(undefined)}
+                    />
+                  ) : (
+                    <span
+                      className="rb-card-step-text"
+                      title={readOnly ? undefined : 'Double-click to rename'}
+                    >
+                      {item.text.trim() || 'Untitled step'}
+                    </span>
+                  )}
+                  {!readOnly && editing !== item.id && (
+                    <button
+                      className="rb-card-step-remove nodrag"
+                      aria-label={`Remove step ${item.text}`}
+                      title="Remove step"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        change('Remove checklist item', (t) => {
+                          t.checklist = t.checklist.filter((c) => c.id !== item.id);
+                        });
+                      }}
+                    >
+                      <Icon name="x" />
+                    </button>
+                  )}
+                </li>
+              ))}
+              {adding ? (
+                <li className="rb-card-step-new">
+                  <span className="rb-card-check" aria-hidden="true">
+                    <Icon name="square" />
+                  </span>
+                  <StepField
+                    label="New step"
+                    placeholder="New step, then Enter"
+                    keepOpen
+                    onCommit={(text) =>
+                      change('Add checklist item', (t) => {
+                        t.checklist.push({ id: newId('check'), text, done: false });
+                      })
+                    }
+                    onClose={() => setEditing(undefined)}
+                  />
+                </li>
+              ) : (
+                !readOnly && (
+                  <li className="rb-card-step-add">
+                    <button
+                      className="nodrag"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setEditing('new-step');
+                      }}
+                    >
+                      <Icon name="plus" />
+                      Add step
+                    </button>
+                  </li>
+                )
               )}
-            </li>
-          ))}
-          {editing !== 'new-step' && !readOnly && (
-            <li className="rb-card-step-add">
-              <button
-                className="nodrag"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setEditing('new-step');
-                }}
-              >
-                <Icon name="plus" />
-                Add step
-              </button>
-            </li>
+            </ul>
           )}
-          {editing === 'new-step' && (
-            <li className="rb-card-step-new">
-              <span className="rb-card-check" aria-hidden="true">
-                <Icon name="square" />
-              </span>
-              <StepField
-                label="New step"
-                placeholder="New step, then Enter"
-                keepOpen
-                onCommit={(text) =>
-                  change('Add checklist item', (t) => {
-                    t.checklist.push({ id: newId('check'), text, done: false });
-                  })
-                }
-                onClose={() => setEditing(undefined)}
-              />
-            </li>
+          {open && (hidden || rows > 1) && (
+            <button
+              className="rb-card-steps-more nodrag"
+              onClick={(event) => {
+                event.stopPropagation();
+                setRows(hidden && rows < MAX_ROWS ? MAX_ROWS : 1);
+              }}
+            >
+              {hidden && rows < MAX_ROWS ? 'Show more' : 'Show less'}
+            </button>
           )}
-        </ul>
+        </section>
       )}
       {!readOnly && !editing && (
         // Floats in the card's top-right corner on hover, so it never adds height.
@@ -313,6 +399,7 @@ export function TaskBody({
             title={steps.length ? 'Add step' : 'Add checklist'}
             onClick={(event) => {
               event.stopPropagation();
+              setOpen(true);
               setEditing('new-step');
             }}
           >

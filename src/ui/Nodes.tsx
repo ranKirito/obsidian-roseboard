@@ -139,7 +139,9 @@ function contentHeight(el: HTMLElement, root = false): number {
   }
   if (el.classList.contains('rb-fit-scroll'))
     return verticalBox(style) + flowChildren(el).reduce((sum, child) => sum + child.offsetHeight, 0);
-  if (!root && !el.querySelector('.rb-fit-scroll, textarea')) return el.offsetHeight;
+  // Shrinkable parts (task description, open checklist) count only the room they insist on.
+  if (el.classList.contains('rb-fit-min')) return parseFloat(style.minHeight) || 0;
+  if (!root && !el.querySelector('.rb-fit-scroll, .rb-fit-min, textarea')) return el.offsetHeight;
   const children = flowChildren(el);
   const gap = parseFloat(style.rowGap) || 0;
   return (
@@ -183,7 +185,7 @@ export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
   const minimal = useStore(lowDetail);
   const [editing, setEditing] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  // Task cards fit their checklist; documents fit their text while read or edited on the canvas.
+  // Task cards report the least room their content needs; documents fit their text while read.
   const autoFit = node.type === 'task' || data.expanded;
   // Content height doubles as the resize minimum, so a card cannot be dragged smaller than its text.
   const [needed, setNeeded] = useState(0);
@@ -305,18 +307,6 @@ export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
                   <Icon name={data.overdue ? 'alarm-clock' : 'calendar'} />
                   {data.overdue ? 'Overdue · ' : ''}
                   {formatDue(task.dueDate, data.today)}
-                </span>
-              )}
-              {!!task.checklist.length && (
-                <span className="rb-meta rb-progress" title="Checklist">
-                  <span className="rb-progress-bar">
-                    <span
-                      style={{
-                        width: `${Math.round((task.checklist.filter((i) => i.done).length / task.checklist.length) * 100)}%`,
-                      }}
-                    />
-                  </span>
-                  {task.checklist.filter((i) => i.done).length}/{task.checklist.length}
                 </span>
               )}
               {task.notePath && (

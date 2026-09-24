@@ -1,5 +1,12 @@
 # Roseboard — implementation and test reports
 
+## 1.5.2 — 2026-09-24
+
+**100/100 automated checks and 60/60 isolated Obsidian scenarios pass** (37 canvas, 23 planner/document), with no renderer errors. The 1.5.2 package contains the exact `main.js` and `styles.css` bytes exercised by these tests; only version metadata changed afterward.
+
+- The checklist scenario checks a 330 px card with 12 steps. The card keeps its size and its list scrolls. **Show more** gives a 240 px (ten-row) list while the saved height stays unchanged, and **Show less** restores the card. Collapsing removes the list and expanding restores it. Dragging the bottom edge up shrinks the saved height below the content while one step stays visible. Undo restores steps and size.
+- The on-card description and checklist editing scenario from 1.5.1 passes unchanged.
+
 ## 1.5.1 — 2026-09-24
 
 **100/100 automated checks and 60/60 isolated Obsidian scenarios pass** (37 canvas, 23 planner/document), with no renderer errors. The 1.5.1 package contains the exact `main.js` and `styles.css` bytes exercised by these tests; only version metadata changed afterward.

@@ -748,11 +748,14 @@
  * Card grid: checkmarks share the 22px column of the completion circle, and all text starts 30px
  * in, level with the title.
  */
-/* Three lines on the card keeps neighbours clear; the editor shows the full text. */
+/*
+ * The description fills the room the card has: at least one line, at most six, fading when cut
+ * off. The card never grows for it; the editor shows the full text.
+ */
 .roseboard-root .rb-card-desc {
-  /* Clipped boxes may shrink to nothing in the card's flex column; this one must not. */
-  flex-shrink: 0;
-  max-height: calc(13px * 1.55 * 3 + 2px);
+  flex: 0 1 auto;
+  min-height: 21px;
+  max-height: calc(13px * 1.55 * 6 + 2px);
   overflow: hidden;
   padding-left: 30px;
   color: #cfcfd9;
@@ -794,23 +797,122 @@
   resize: none;
   overflow: hidden;
 }
-.roseboard-root .rb-card-checklist {
+.roseboard-root .rb-card-desc-empty {
+  align-self: flex-start;
   flex-shrink: 0;
+  height: 21px;
+  min-height: 21px;
+  margin-left: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--rb-faint);
+  font-size: 13px;
+}
+.roseboard-root .rb-card-desc-empty:hover {
+  background: transparent;
+  color: var(--rb-muted);
+}
+/* Collapsible checklist: a header, then a list that shows at least --rb-rows steps and scrolls. */
+/*
+ * Shrinks with the card, but never below its header (24px), its minimum rows (24px each) and
+ * the Show more/less button (22px). Gaps are 2px.
+ */
+.roseboard-root .rb-card-steps {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  gap: 2px;
+  min-height: 24px;
+}
+.roseboard-root .rb-card-steps.is-open {
+  min-height: calc(26px + var(--rb-rows, 1) * 24px);
+}
+.roseboard-root .rb-card-steps.is-open.has-more {
+  min-height: calc(50px + var(--rb-rows, 1) * 24px);
+}
+.roseboard-root .rb-card-steps-head {
+  align-self: stretch;
+  justify-content: flex-start;
+  gap: 8px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rb-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.roseboard-root .rb-card-steps-head:hover {
+  background: #ffffff08;
+  color: var(--rb-text);
+}
+.roseboard-root .rb-card-steps-chevron {
+  width: 22px;
+  justify-content: center;
+  --icon-size: 14px;
+  transition: transform 120ms ease;
+}
+.roseboard-root .rb-card-steps.is-open .rb-card-steps-chevron {
+  transform: rotate(90deg);
+}
+.roseboard-root .rb-card-steps-count {
+  color: var(--rb-faint);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.roseboard-root .rb-card-steps-more {
+  align-self: flex-start;
+  flex-shrink: 0;
+  height: 22px;
+  min-height: 22px;
+  margin-left: 24px;
+  padding: 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--rb-pink-soft);
+  font-size: 11.5px;
+}
+.roseboard-root .rb-card-steps-more:hover {
+  background: #f472b614;
+}
+.roseboard-root .rb-card-checklist {
+  flex: 0 1 auto;
+  min-height: calc(var(--rb-rows, 1) * 24px);
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
   font-size: 13px;
   line-height: 20px;
   color: #e2e2ea;
 }
+.roseboard-root .rb-card-checklist::-webkit-scrollbar {
+  width: 6px;
+}
+.roseboard-root .rb-card-checklist::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: #3a3a45;
+}
+.roseboard-root .rb-card-checklist::-webkit-scrollbar-track {
+  background: transparent;
+}
 .roseboard-root .rb-card-checklist li {
   display: flex;
+  flex-shrink: 0;
   align-items: flex-start;
   gap: 8px;
   min-width: 0;
+  min-height: 24px;
+  padding: 2px 0;
 }
 .roseboard-root .rb-card-step-text {
   flex: 1;

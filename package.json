@@ -1,6 +1,6 @@
 {
   "name": "roseboard",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "private": true,
   "description": "A local-first task canvas for Obsidian",
   "license": "MIT",

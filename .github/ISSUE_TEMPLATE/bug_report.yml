@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with Roseboard 1.5.1.
+description: Report a problem with Roseboard 1.5.2.
 title: "[Bug]: "
 body:
   - type: input
@@ -7,7 +7,7 @@ body:
     attributes:
       label: Versions and device
       description: Roseboard version, Obsidian version, operating system, and desktop or mobile.
-      placeholder: Roseboard 1.5.1, Obsidian ..., macOS ...
+      placeholder: Roseboard 1.5.2, Obsidian ..., macOS ...
     validations:
       required: true
   - type: textarea

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2 — 2026-09-24
+
+- Task cards keep the size you give them and can be resized smaller than their content again. Content height no longer sets a minimum, except that an open checklist shows at least one step.
+- The description is always visible: it fills the room the card has (one to six lines, fading when cut off). Cards without one show **Add a description…**.
+- The checklist is a collapsible section: a header with a chevron, `done/total` and a progress bar, then a list that scrolls inside the card. **Show more** gives it room for ten steps in the current view; beyond ten it scrolls. **Show less** returns to the card's own size. The extra room is view-only and never saved. A bigger card shows more steps.
+- The footer no longer repeats checklist progress; it lives in the checklist header.
+
 ## 1.5.1 — 2026-09-24
 
 ### Task cards

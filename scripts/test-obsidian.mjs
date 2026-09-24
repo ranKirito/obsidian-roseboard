@@ -131,7 +131,7 @@ try {
     assert.ok((await root().locator('.rb-icon svg').count()) > 10, 'Lucide icons render');
     await page.screenshot({ path: 'docs/roseboard-desktop.png' });
   });
-  await test('Task cards show checklist steps, toggle them in place, and grow without saving a new size', async () => {
+  await test('Task cards keep their size: checklists scroll, collapse, show more on request, and cards resize smaller', async () => {
     const welcome = 'Welcome to Roseboard.md';
     const card = root().locator('[data-id="node-sketch"]');
     const steps = () => board(welcome).then((b) => b.tasks.sketch.checklist.map((c) => c.done));
@@ -142,16 +142,47 @@ try {
     assert.deepEqual(await steps(), [true, false, false]);
     const saved = (await board(welcome)).nodes['node-sketch'].height;
     const shown = () => card.evaluate((el) => el.offsetHeight);
+    const list = () =>
+      card
+        .locator('.rb-card-checklist')
+        .evaluate((el) => ({ client: el.clientHeight, scroll: el.scrollHeight }));
     const initial = await shown();
-    assert.ok(initial >= saved);
+    assert.equal(initial, saved, 'the card keeps the size it was given');
+    // More steps scroll inside the card instead of growing it.
     await page.evaluate(
-      `${session(welcome)}.edit('Add steps', (b) => { for (let i = 0; i < 6; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false }); })`,
+      `${session(welcome)}.edit('Add steps', (b) => { for (let i = 0; i < 9; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false }); })`,
     );
-    await eventually(async () => assert.ok((await shown()) > initial + 60));
-    assert.equal(await card.locator('.rb-card-checklist').getByRole('checkbox').count(), 9);
-    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved, 'fitted height is view-only');
+    await eventually(async () => {
+      const l = await list();
+      assert.ok(l.scroll > l.client + 20, JSON.stringify(l));
+    });
+    assert.equal(await shown(), initial);
+    // Show more asks the view for ten rows; the saved size does not change. Show less returns.
+    await card.getByRole('button', { name: 'Show more', exact: true }).click();
+    await eventually(async () => assert.equal((await list()).client, 240));
+    assert.ok((await shown()) > initial);
+    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved, 'extra rows are view-only');
+    await card.getByRole('button', { name: 'Show less', exact: true }).click();
+    await eventually(async () => assert.equal(await shown(), initial));
+    // The checklist collapses to its header and opens again.
+    await card.getByRole('button', { name: /^Hide checklist/ }).click();
+    assert.equal(await card.locator('.rb-card-checklist').count(), 0);
+    await card.getByRole('button', { name: /^Show checklist, 1 of 12 done/ }).click();
+    // Cards resize below their content; an open checklist still shows at least one step.
+    await root()
+      .locator('.react-flow__pane')
+      .click({ position: { x: 20, y: 20 } });
+    const box = await card.boundingBox();
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height - 160, { steps: 10 });
+    await page.mouse.up();
+    await eventually(async () => assert.ok((await board(welcome)).nodes['node-sketch'].height < saved - 60));
+    assert.ok((await list()).client >= 24);
     await action('Undo');
-    await eventually(async () => assert.ok(Math.abs((await shown()) - initial) <= 2));
+    await action('Undo');
+    await eventually(async () => assert.equal((await board(welcome)).tasks.sketch.checklist.length, 3));
+    assert.equal((await board(welcome)).nodes['node-sketch'].height, saved);
   });
   await test('Selection actions never overlap the zoom controls, with or without the inspector', async () => {
     const rects = async () => ({

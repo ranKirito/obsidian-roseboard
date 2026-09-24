@@ -1,5 +1,5 @@
 {
-  "started": "2026-09-24T14:08:25.759Z",
+  "started": "2026-09-24T15:12:16.037Z",
   "environment": {
     "platform": "darwin",
     "arch": "arm64",
@@ -13,32 +13,32 @@
     {
       "name": "Bundled plugin loads in installed Obsidian; full-pane example canvas",
       "result": "PASS",
-      "ms": 152
+      "ms": 164
     },
     {
-      "name": "Task cards show checklist steps, toggle them in place, and grow without saving a new size",
+      "name": "Task cards keep their size: checklists scroll, collapse, show more on request, and cards resize smaller",
       "result": "PASS",
-      "ms": 160
+      "ms": 480
     },
     {
       "name": "Selection actions never overlap the zoom controls, with or without the inspector",
       "result": "PASS",
-      "ms": 1519
+      "ms": 1389
     },
     {
       "name": "Any card edge resizes without selecting first; edge midpoints still start connections",
       "result": "PASS",
-      "ms": 158
+      "ms": 175
     },
     {
       "name": "Create board command, task record, inspector edits, quick dates, and on-card description and checklist persist",
       "result": "PASS",
-      "ms": 393
+      "ms": 644
     },
     {
       "name": "Completed pointer drag is one undo step; resize and 10,000+ coordinates persist",
       "result": "PASS",
-      "ms": 450
+      "ms": 464
     },
     {
       "name": "Reopen restores same task IDs and coordinates from Markdown",
@@ -48,122 +48,122 @@
     {
       "name": "Inline rename, arrow nudging and card colours edit the record in place",
       "result": "PASS",
-      "ms": 133
+      "ms": 134
     },
     {
       "name": "Double-click on empty canvas creates a task there; context menu completes it",
       "result": "PASS",
-      "ms": 311
+      "ms": 318
     },
     {
       "name": "List editing, unplaced tray, placement removal, duplicate/delete and undo",
       "result": "PASS",
-      "ms": 269
+      "ms": 278
     },
     {
       "name": "External JSON edit reloads valid data, preserves coordinates, keeps undo, and highlights the change",
       "result": "PASS",
-      "ms": 126
+      "ms": 119
     },
     {
       "name": "Invalid JSON retains last valid display, disables writes, never overwrites source",
       "result": "PASS",
-      "ms": 637
+      "ms": 633
     },
     {
       "name": "Two open board views share one model and source-editor suspension prevents writes",
       "result": "PASS",
-      "ms": 133
+      "ms": 160
     },
     {
       "name": "Local edits racing an external change to another record are merged, not conflicted",
       "result": "PASS",
-      "ms": 12
+      "ms": 13
     },
     {
       "name": "Same-field overlap keeps local work, is listed for review, and can take the other side",
       "result": "PASS",
-      "ms": 46
+      "ms": 49
     },
     {
       "name": "Uncombinable changes enter Conflict; recovery copy and preserve/reload work",
       "result": "PASS",
-      "ms": 144
+      "ms": 141
     },
     {
       "name": "Reading-view preview is resizable and read-only; it does not suspend board writes",
       "result": "PASS",
-      "ms": 66
+      "ms": 70
     },
     {
       "name": "Vault-note picker creates a reference; target rename follows; deletion is explicit",
       "result": "PASS",
-      "ms": 191
+      "ms": 209
     },
     {
       "name": "Sticky safe preview does not mount raw HTML or fetch remote images",
       "result": "PASS",
-      "ms": 464
+      "ms": 470
     },
     {
       "name": "Frames move their explicit members once and ungroup without deleting tasks",
       "result": "PASS",
-      "ms": 332
+      "ms": 348
     },
     {
       "name": "Labelled connectors and dependency connectors have distinct storage; cycles are rejected",
       "result": "PASS",
-      "ms": 201
+      "ms": 209
     },
     {
       "name": "Dragging a connection onto empty canvas creates a linked task",
       "result": "PASS",
-      "ms": 333
+      "ms": 334
     },
     {
       "name": "Blocked completion warns, can be cancelled or accepted, and remains undoable",
       "result": "PASS",
-      "ms": 164
+      "ms": 171
     },
     {
       "name": "Kanban drag changes status only and keeps canvas positions",
       "result": "PASS",
-      "ms": 289
+      "ms": 294
     },
     {
       "name": "Search, status/priority/tag/due/blocked filters and presets preserve positions",
       "result": "PASS",
-      "ms": 386
+      "ms": 423
     },
     {
       "name": "Multi-selection, keyboard duplicate/undo, and shortcuts do not hijack text inputs",
       "result": "PASS",
-      "ms": 843
+      "ms": 893
     },
     {
       "name": "Source-editor in-progress text is revalidated after closing; raw export command works",
       "result": "PASS",
-      "ms": 2285
+      "ms": 2282
     },
     {
       "name": "Wheel input: trackpad deltas pan, mouse-wheel deltas zoom, Shift+wheel pans sideways",
       "result": "PASS",
-      "ms": 895
+      "ms": 892
     },
     {
       "name": "Zoom, fit, minimap, snapping and marquee selection operate without camera saves",
       "result": "PASS",
-      "ms": 2455
+      "ms": 1916
     },
     {
       "name": "Pen draws strokes, eraser removes them, undo restores, wheel still pans while drawing",
       "result": "PASS",
-      "ms": 1317
+      "ms": 1349
     },
     {
       "name": "Ink written by another device is merged and highlighted like any record",
       "result": "PASS",
-      "ms": 27
+      "ms": 28
     },
     {
       "name": "Tags commit while typing, retain delimiters, and refresh after undo",
@@ -173,27 +173,27 @@
     {
       "name": "Unsupported schema and deleted source stay recoverable without replacement writes",
       "result": "PASS",
-      "ms": 650
+      "ms": 667
     },
     {
       "name": "Narrow viewport uses a drawer and usable List view (desktop emulation only)",
       "result": "PASS",
-      "ms": 180
+      "ms": 198
     },
     {
       "name": "Stress fixture: 300 nodes, 500 connections; load, interaction timings and culling",
       "result": "PASS",
-      "ms": 2631
+      "ms": 2944
     },
     {
       "name": "Repeated open/close releases React roots, subscriptions and clean sessions",
       "result": "PASS",
-      "ms": 1761
+      "ms": 1779
     },
     {
       "name": "Disabling the plugin leaves readable fenced JSON in the source note",
       "result": "PASS",
-      "ms": 121
+      "ms": 128
     }
   ],
   "errors": [],
@@ -201,20 +201,20 @@
     "taskNodes": 300,
     "derivedDependencies": 250,
     "ordinaryConnectors": 250,
-    "loadToTwoPaintsMs": 780,
-    "singleTaskEditToDOMMs": 103,
+    "loadToTwoPaintsMs": 976,
+    "singleTaskEditToDOMMs": 110,
     "panEventToNextFrameSamplesMs": [
-      12,
+      14,
+      23,
       27,
-      17,
-      17,
-      21,
-      12,
-      17,
-      17,
+      25,
+      20,
+      11,
+      23,
+      10,
       16,
-      17,
-      17,
+      18,
+      16,
       17,
       17,
       16,
@@ -224,5 +224,5 @@
     "mountedNodesAt100PercentWithCulling": 20,
     "note": "CDP-driven event/paint latency includes automation overhead; not a claimed device FPS."
   },
-  "finished": "2026-09-24T14:08:46.162Z"
+  "finished": "2026-09-24T15:12:36.977Z"
 }

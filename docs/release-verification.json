@@ -1,24 +1,24 @@
 {
-  "verifiedAt": "2026-09-24T14:43:18.562062+00:00",
-  "version": "1.5.1",
-  "archive": "release/roseboard-1.5.1.zip",
-  "archiveSHA256": "5c5523bbb98f5e5389b48b3e6eb6637d914f4f739b4c9b6bf472342f01c42a91",
+  "verifiedAt": "2026-09-24T15:13:39.889129+00:00",
+  "version": "1.5.2",
+  "archive": "release/roseboard-1.5.2.zip",
+  "archiveSHA256": "c4eed49151c6e67d0368e7169f387d2843b179809a2d98970da73b07cf7621cf",
   "checks": {
     "main.js": {
-      "sha256": "0e1163dba01e28cb432f5d2f1924795eeed2c788c3e97bb4ba55f9594c9a3882",
+      "sha256": "855d5528adccd1846f2b6d35601ce3ede3833f9cd5f666339321e526feaf1ee6",
       "matchesIntegrationTestedBuild": true
     },
     "styles.css": {
-      "sha256": "5c5a3536c06b27bb90433a5169463d51cb0115c63ace29768ba153b330572b66",
+      "sha256": "31bf3fd118c88e106e5804aa0a4274eeb334508b1a29087d13a497797f5c8379",
       "matchesIntegrationTestedBuild": true
     },
     "manifest.json": {
-      "sha256": "da82c890168a8848e6dd7d842095de46ef4e7d57e30eb2a46c5d916149606547",
+      "sha256": "362b9b6e6455659a1fd2e4c5fa2bb0cc99e2f5952e406f8652d6c0be2364a35a",
       "matchesIntegrationTestedBuild": false
     }
   },
   "automatedTests": 100,
   "isolatedObsidianScenarios": 60,
   "rendererErrors": 0,
-  "note": "All 60 integration scenarios exercised these exact main.js and styles.css bytes before the metadata-only version bump from 1.5.0 to 1.5.1. The final version metadata passed the automated consistency tests. No real vault was changed by the test drivers."
+  "note": "All 60 integration scenarios exercised these exact main.js and styles.css bytes before the metadata-only version bump from 1.5.1 to 1.5.2. The final version metadata passed the automated consistency tests. No real vault was changed by the test drivers."
 }
