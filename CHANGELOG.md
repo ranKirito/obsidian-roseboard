@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.1 — 2026-09-24
+
+### Task cards
+- Write the description and checklist directly on the task card. Hover a card for **Add description** / **Add checklist** in its top-right corner, or use **Add step** below existing steps. Enter adds a step and keeps the field open for the next one. Double-click a step or the description to edit it; blur or ⌘/Ctrl+Enter saves, Escape cancels. Steps have a remove button on hover. Each save is one undoable edit.
+- Larger, easier-to-read card text: 13 px descriptions (Markdown, clamped to three lines with a fade) and 13 px steps with 16 px checkboxes. Checkboxes sit in the completion circle's column and all text starts level with the title.
+- On the canvas the inspector no longer repeats the description and checklist; List, Kanban, Day and Calendar still edit them in the inspector. Clicking inside a card's description or checklist no longer opens the inspector, which could cover cards near the right edge mid double-click.
+
+### Alignment
+- The completion circle is centred on the first line of the task title everywhere. It was 6 px low on canvas cards, about 8 px in Kanban, up to 10 px in Day and 4.5 px in List. Obsidian's fixed button height had enlarged the circle's box. List rows now align status, priority, date and actions to the title's first line.
+- The welcome example gives its longest card room, so it no longer overlaps the document card below it.
+
 ## 1.5.0 — 2026-09-23
 
 ### Day page

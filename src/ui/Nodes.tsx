@@ -12,6 +12,8 @@ import { addDays, type BoardNode, type Task } from '../domain/model';
 import type { BoardHost } from './ports';
 import { Markdown } from './Markdown';
 import { CanvasNote } from './CanvasNote';
+import { TaskBody } from './TaskBody';
+import type { Draft } from 'immer';
 import { Icon, priorityIcon, statusIcon, statusLabel } from './icons';
 export type CardData = {
   node: BoardNode;
@@ -34,11 +36,10 @@ export type CardData = {
   /** Inline edit of the card's primary text: task title, frame title or sticky content. */
   setText: (nodeId: string, text: string) => void;
   toggleCheck: (taskId: string, itemId: string) => void;
+  editTask: (taskId: string, label: string, change: (task: Draft<Task>) => void) => void;
   /** Reports the height the card's content needs; the view grows the card, never the saved size. */
   fit: (nodeId: string, height: number, expanded: boolean) => void;
 };
-/** Checklist steps shown on a task card before the rest collapse into a count. */
-const CARD_STEPS = 8;
 export type FlowNode = Node<CardData, 'card'>;
 const lowDetail = (state: { transform: [number, number, number] }) => state.transform[2] < 0.5;
 export function formatDue(due: string, today: string): string {
@@ -107,6 +108,15 @@ const inFlow = (el: Element): el is HTMLElement => {
   const style = getComputedStyle(el);
   return style.display !== 'none' && style.position !== 'absolute' && style.position !== 'fixed';
 };
+/** In-flow children, looking through `display: contents` wrappers such as the task body. */
+const flowChildren = (el: Element): HTMLElement[] =>
+  [...el.children].flatMap((child) =>
+    child instanceof HTMLElement && getComputedStyle(child).display === 'contents'
+      ? flowChildren(child)
+      : inFlow(child)
+        ? [child]
+        : [],
+  );
 const verticalBox = (style: CSSStyleDeclaration) =>
   parseFloat(style.paddingTop) +
   parseFloat(style.paddingBottom) +
@@ -124,14 +134,13 @@ function contentHeight(el: HTMLElement, root = false): number {
     el.setCssStyles({ height: '0px', flex: 'none', minHeight: '0px' });
     const needed = el.scrollHeight;
     el.setCssStyles(previous);
-    return Math.max(needed, 160) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+    const min = Number(el.dataset.fitMin ?? 160);
+    return Math.max(needed, min) + parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
   }
   if (el.classList.contains('rb-fit-scroll'))
-    return (
-      verticalBox(style) + [...el.children].filter(inFlow).reduce((sum, child) => sum + child.offsetHeight, 0)
-    );
+    return verticalBox(style) + flowChildren(el).reduce((sum, child) => sum + child.offsetHeight, 0);
   if (!root && !el.querySelector('.rb-fit-scroll, textarea')) return el.offsetHeight;
-  const children = [...el.children].filter(inFlow);
+  const children = flowChildren(el);
   const gap = parseFloat(style.rowGap) || 0;
   return (
     verticalBox(style) +
@@ -191,7 +200,6 @@ export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
         }
       : undefined,
   );
-  const steps = task?.checklist ?? [];
   const tint = node.color ? ` rb-tint-${node.color}` : '';
   const startEdit = () => {
     if (!readOnly) setEditing(true);
@@ -274,32 +282,15 @@ export const Card = memo(function Card({ id, data }: NodeProps<FlowNode>) {
               </strong>
             )}
           </div>
-          {!minimal && steps.length > 0 && (
-            <ul className="rb-card-checklist">
-              {steps.slice(0, CARD_STEPS).map((item) => (
-                <li key={item.id} className={item.done ? 'is-done' : ''}>
-                  <button
-                    className="rb-card-check nodrag"
-                    role="checkbox"
-                    aria-checked={item.done}
-                    aria-label={`${item.done ? 'Reopen' : 'Complete'} step ${item.text}`}
-                    disabled={readOnly}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      data.toggleCheck(node.taskId, item.id);
-                    }}
-                  >
-                    <Icon name={item.done ? 'square-check' : 'square'} />
-                  </button>
-                  <span>{item.text.trim() || 'Untitled step'}</span>
-                </li>
-              ))}
-              {steps.length > CARD_STEPS && (
-                <li className="rb-card-check-more">
-                  +{steps.length - CARD_STEPS} more step{steps.length - CARD_STEPS === 1 ? '' : 's'}
-                </li>
-              )}
-            </ul>
+          {!minimal && (
+            <TaskBody
+              taskId={node.taskId}
+              task={task}
+              host={host}
+              readOnly={readOnly}
+              editTask={data.editTask}
+              toggleCheck={data.toggleCheck}
+            />
           )}
           {!minimal && (
             <div className="rb-card-meta">

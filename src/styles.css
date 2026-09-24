@@ -676,10 +676,17 @@
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  line-height: 1.35;
   font-size: 15px;
+  line-height: 22px;
+}
+/* The completion circle is exactly one title line tall, so it centres on the first line. */
+.roseboard-root .rb-card-title > .rb-complete {
+  height: 22px;
+  min-height: 22px;
+  margin: 0;
 }
 .roseboard-root .rb-card-title strong {
+  line-height: 22px;
   font-weight: 560;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -688,16 +695,21 @@
   word-break: break-word;
   letter-spacing: -0.005em;
 }
+/*
+ * Obsidian gives every button a fixed height, so the completion circle's box is set explicitly
+ * and matches the line height of the title beside it; the circle then centres on the first line.
+ */
 .roseboard-root .rb-complete {
   border: 0;
   background: transparent;
   padding: 0;
+  height: 22px;
   min-height: 22px;
   width: 22px;
   flex-shrink: 0;
   color: var(--rb-faint);
   --icon-size: 19px;
-  margin-top: 1px;
+  margin: 0;
 }
 .roseboard-root .rb-complete:hover {
   color: var(--rb-pink-soft);
@@ -728,16 +740,71 @@
   gap: 4px;
   --icon-size: 12px;
 }
+/* The body's parts sit directly in the card's column; the wrapper adds no box or gap. */
+.roseboard-root .rb-task-body {
+  display: contents;
+}
+/*
+ * Card grid: checkmarks share the 22px column of the completion circle, and all text starts 30px
+ * in, level with the title.
+ */
+/* Three lines on the card keeps neighbours clear; the editor shows the full text. */
+.roseboard-root .rb-card-desc {
+  /* Clipped boxes may shrink to nothing in the card's flex column; this one must not. */
+  flex-shrink: 0;
+  max-height: calc(13px * 1.55 * 3 + 2px);
+  overflow: hidden;
+  padding-left: 30px;
+  color: #cfcfd9;
+  cursor: text;
+}
+.roseboard-root .rb-card-desc.is-clamped {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+}
+.roseboard-root .rb-card-desc .rb-markdown {
+  max-height: none;
+  overflow: visible;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.roseboard-root .rb-card-desc .rb-markdown > :last-child {
+  margin-bottom: 0;
+}
+.roseboard-root .rb-card-desc .rb-markdown h1,
+.roseboard-root .rb-card-desc .rb-markdown h2,
+.roseboard-root .rb-card-desc .rb-markdown h3 {
+  margin: 2px 0 4px;
+  font-size: 13.5px;
+  color: var(--rb-text);
+}
+.roseboard-root .rb-card-field {
+  font-size: 13px;
+  background: var(--rb-bg);
+  border-color: #7d4466;
+  border-radius: 8px;
+  user-select: text;
+}
+.roseboard-root .rb-card-desc-field {
+  width: calc(100% - 30px);
+  margin-left: 30px;
+  min-height: 60px;
+  padding: 8px 10px;
+  line-height: 1.55;
+  resize: none;
+  overflow: hidden;
+}
 .roseboard-root .rb-card-checklist {
+  flex-shrink: 0;
   list-style: none;
   margin: 0;
-  padding: 0 0 0 1px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #d9d9e2;
+  font-size: 13px;
+  line-height: 20px;
+  color: #e2e2ea;
 }
 .roseboard-root .rb-card-checklist li {
   display: flex;
@@ -745,28 +812,31 @@
   gap: 8px;
   min-width: 0;
 }
-.roseboard-root .rb-card-checklist li > span {
-  padding-top: 2px;
-  overflow-wrap: anywhere;
+.roseboard-root .rb-card-step-text {
+  flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
+  cursor: text;
 }
-.roseboard-root .rb-card-checklist li.is-done > span {
+.roseboard-root .rb-card-checklist li.is-done .rb-card-step-text {
   color: var(--rb-faint);
   text-decoration: line-through;
   text-decoration-color: #5a5a66;
 }
-/* The step box sits in the same 22px column as the task's completion circle above it. */
 .roseboard-root .rb-card-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 22px;
   min-width: 22px;
-  min-height: 21px;
-  height: 21px;
+  height: 20px;
+  min-height: 20px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--rb-faint);
-  --icon-size: 15px;
+  --icon-size: 16px;
 }
 .roseboard-root .rb-card-check:hover {
   background: transparent;
@@ -775,10 +845,122 @@
 .roseboard-root .is-done > .rb-card-check {
   color: var(--rb-mint);
 }
-.roseboard-root .rb-card-check-more {
-  padding-left: 30px;
-  font-size: 11px;
+.roseboard-root .rb-card-step-new > .rb-card-check {
+  opacity: 0.5;
+}
+.roseboard-root .rb-card-step-field {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  margin: -2px 0;
+  padding: 1px 7px;
+}
+.roseboard-root .rb-card-step-remove {
+  flex-shrink: 0;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--rb-faint);
+  opacity: 0;
+  --icon-size: 13px;
+}
+.roseboard-root .rb-card-checklist li:hover .rb-card-step-remove,
+.roseboard-root .rb-card-step-remove:focus-visible {
+  opacity: 1;
+}
+.roseboard-root .rb-card-step-remove:hover {
+  background: var(--rb-raised);
+  color: var(--rb-rose-soft);
+}
+/* Card actions float top-right on hover or selection; touch screens always show them. */
+.roseboard-root .rb-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--rb-border);
+  border-radius: 8px;
+  background: var(--rb-raised);
+  box-shadow: 0 2px 8px #0005;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.roseboard-root .react-flow__node-card:hover .rb-card-actions,
+.roseboard-root .react-flow__node-card.selected .rb-card-actions,
+.roseboard-root .rb-card-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+@media (hover: none) {
+  .roseboard-root .rb-card-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+.roseboard-root .rb-card-actions button {
+  width: 26px;
+  min-width: 26px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rb-muted);
+  --icon-size: 14px;
+}
+.roseboard-root .rb-card-actions button:hover {
+  background: var(--rb-hover);
+  color: var(--rb-text);
+}
+.roseboard-root .rb-card-step-add button {
+  min-height: 20px;
+  height: 20px;
+  padding: 0;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--rb-faint);
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+.roseboard-root .rb-card-step-add button .rb-icon {
+  width: 22px;
+  --icon-size: 14px;
+  justify-content: center;
+}
+.roseboard-root .react-flow__node-card:hover .rb-card-step-add button,
+.roseboard-root .react-flow__node-card.selected .rb-card-step-add button,
+.roseboard-root .rb-card-step-add button:focus-visible {
+  opacity: 1;
+}
+.roseboard-root .rb-card-step-add button:hover {
+  background: transparent;
+  color: var(--rb-pink-soft);
+}
+@media (hover: none) {
+  .roseboard-root .rb-card-step-add button {
+    opacity: 1;
+  }
+}
+.roseboard-root .rb-inspector-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--rb-border);
+  border-radius: var(--rb-radius-sm);
+  font-size: 11.5px;
 }
 .roseboard-root .rb-overdue {
   color: var(--rb-rose-soft);
@@ -1632,7 +1814,7 @@
 .roseboard-root .rb-list-row {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr) 118px 84px 92px 84px;
-  align-items: center;
+  align-items: start;
   column-gap: 14px;
   border-bottom: 1px solid var(--rb-border);
   padding: 10px 8px;
@@ -1643,9 +1825,18 @@
 .roseboard-root .rb-list-facts {
   display: contents;
 }
-.roseboard-root .rb-list-status {
+.roseboard-root .rb-list-status,
+.roseboard-root .rb-list-priority,
+.roseboard-root .rb-list-due {
   display: flex;
+  align-items: center;
   min-width: 0;
+  min-height: 20px;
+}
+.roseboard-root .rb-list-row > .rb-list-action {
+  height: 30px;
+  min-height: 30px;
+  margin-top: -5px;
 }
 .roseboard-root .rb-list-action {
   justify-self: stretch;
@@ -1657,9 +1848,15 @@
   background: #31232d;
   border-color: #7d4466;
 }
+.roseboard-root .rb-list-row > .rb-complete {
+  height: 20px;
+  min-height: 20px;
+}
 .roseboard-root .rb-list-title {
+  height: auto;
+  min-height: 0;
   min-width: 0;
-  padding-left: 0;
+  padding: 0;
   white-space: normal;
   text-align: left;
   background: none;
@@ -1671,6 +1868,7 @@
 }
 .roseboard-root .rb-list-title strong {
   font-weight: 500;
+  line-height: 20px;
 }
 .roseboard-root .rb-list-title small {
   display: block;
@@ -1780,11 +1978,14 @@
   line-height: 1.35;
 }
 .roseboard-root .rb-kanban-title strong {
+  line-height: 20px;
   font-weight: 540;
   flex: 1;
   word-break: break-word;
 }
 .roseboard-root .rb-kanban-title .rb-complete {
+  height: 20px;
+  min-height: 20px;
   --icon-size: 17px;
 }
 .roseboard-root .rb-kanban-title .rb-icon-button {
@@ -2251,7 +2452,7 @@
 .roseboard-root .rb-agenda-task {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   padding: 8px 4px 8px 6px;
   border-radius: 10px;
@@ -2293,7 +2494,24 @@
 .roseboard-root .rb-agenda-task:hover .rb-grip {
   opacity: 1;
 }
+.roseboard-root .rb-agenda-task > .rb-complete {
+  height: 20px;
+  min-height: 20px;
+  margin-top: 2px;
+}
+/* Buttons taller than a line centre on the title's first line (2px padding + 20px line). */
+.roseboard-root .rb-agenda-task > .rb-row-menu,
+.roseboard-root .rb-agenda-task > .rb-plan-button {
+  margin-top: calc(12px - var(--rb-row-button) / 2);
+}
+.roseboard-root .rb-agenda-task > .rb-row-menu {
+  --rb-row-button: 30px;
+}
+.roseboard-root .rb-agenda-task > .rb-plan-button {
+  --rb-row-button: 28px;
+}
 .roseboard-root .rb-agenda-title {
+  height: auto;
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -2315,7 +2533,7 @@
 .roseboard-root .rb-agenda-title strong {
   font-size: 13px;
   font-weight: 520;
-  line-height: 1.4;
+  line-height: 20px;
   overflow-wrap: anywhere;
 }
 .roseboard-root .rb-done .rb-agenda-title strong {
@@ -2337,6 +2555,7 @@
 .roseboard-root .rb-row-menu {
   flex-shrink: 0;
   min-width: 30px;
+  height: 30px;
   min-height: 30px;
   border: 0;
   background: transparent;
@@ -2344,6 +2563,7 @@
 }
 .roseboard-root .rb-plan-button {
   flex-shrink: 0;
+  height: 28px;
   min-height: 28px;
   padding: 3px 9px;
   font-size: 11.5px;

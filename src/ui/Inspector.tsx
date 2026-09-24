@@ -40,6 +40,7 @@ export function Inspector({
   edit,
   complete,
   previewNote,
+  onCard = false,
 }: {
   host: BoardHost;
   board: Board;
@@ -53,6 +54,8 @@ export function Inspector({
   edit: (label: string, action: Edit, key?: string) => void;
   complete: (id: string) => void;
   previewNote: (path: string) => void;
+  /** The task is being edited from its canvas card, which shows its description and checklist. */
+  onCard?: boolean;
 }) {
   const node = nodeId ? board.nodes[nodeId] : undefined;
   const task = taskId ? board.tasks[taskId] : undefined;
@@ -281,84 +284,95 @@ export function Inspector({
           )}
           {task && taskId && (
             <>
-              <div className="rb-section-title">
-                <span>Description</span>
-                <button type="button" onClick={() => setTab(tab === 'edit' ? 'preview' : 'edit')}>
-                  {tab === 'edit' ? 'Preview' : 'Edit Markdown'}
-                </button>
-              </div>
-              {tab === 'edit' ? (
-                <textarea
-                  ref={description}
-                  aria-label="Task description"
-                  rows={4}
-                  placeholder="Notes, links, Markdown…"
-                  value={task.description}
-                  onChange={(e) => updateTask({ description: e.target.value }, 'description')}
-                />
+              {onCard ? (
+                <p className="rb-muted rb-inspector-hint">
+                  <Icon name="square-pen" />
+                  Description and checklist are edited on the card itself.
+                </p>
               ) : (
-                <Markdown text={task.description || '*No description yet.*'} host={host} />
+                <>
+                  <div className="rb-section-title">
+                    <span>Description</span>
+                    <button type="button" onClick={() => setTab(tab === 'edit' ? 'preview' : 'edit')}>
+                      {tab === 'edit' ? 'Preview' : 'Edit Markdown'}
+                    </button>
+                  </div>
+                  {tab === 'edit' ? (
+                    <textarea
+                      ref={description}
+                      aria-label="Task description"
+                      rows={4}
+                      placeholder="Notes, links, Markdown…"
+                      value={task.description}
+                      onChange={(e) => updateTask({ description: e.target.value }, 'description')}
+                    />
+                  ) : (
+                    <Markdown text={task.description || '*No description yet.*'} host={host} />
+                  )}
+                  <div className="rb-section-title">
+                    <span>
+                      Checklist · {task.checklist.filter((c) => c.done).length}/{task.checklist.length}
+                    </span>
+                  </div>
+                  {task.checklist.map((item) => (
+                    <div className="rb-check-item" key={item.id}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Complete checklist ${item.text}`}
+                        checked={item.done}
+                        onChange={(e) =>
+                          edit('Toggle checklist', (b) => {
+                            b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.done = e.target.checked;
+                          })
+                        }
+                      />
+                      <GrowingText
+                        label="Checklist text"
+                        className={item.done ? 'rb-struck' : ''}
+                        value={item.text}
+                        onEnter={(field) =>
+                          field
+                            .closest('.rb-inspector')
+                            ?.querySelector<HTMLTextAreaElement>('[aria-label="New checklist item"]')
+                            ?.focus()
+                        }
+                        onChange={(text) =>
+                          edit(
+                            'Edit checklist',
+                            (b) => {
+                              b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.text = text;
+                            },
+                            item.id,
+                          )
+                        }
+                      />
+                      <button
+                        type="button"
+                        className="rb-icon-button"
+                        aria-label={`Remove checklist ${item.text}`}
+                        onClick={() =>
+                          updateTask({ checklist: task.checklist.filter((c) => c.id !== item.id) })
+                        }
+                      >
+                        <Icon name="x" />
+                      </button>
+                    </div>
+                  ))}
+                  <div className="rb-check-item rb-check-new">
+                    <Icon name="plus" />
+                    <GrowingText
+                      label="New checklist item"
+                      placeholder="Add a step and press Enter"
+                      value={newItem}
+                      onChange={setNewItem}
+                      onEnter={addItem}
+                    />
+                    <button type="button" aria-label="Add checklist item" onClick={addItem}>
+                      Add
+                    </button>
+                  </div>
+                </>
               )}
-              <div className="rb-section-title">
-                <span>
-                  Checklist · {task.checklist.filter((c) => c.done).length}/{task.checklist.length}
-                </span>
-              </div>
-              {task.checklist.map((item) => (
-                <div className="rb-check-item" key={item.id}>
-                  <input
-                    type="checkbox"
-                    aria-label={`Complete checklist ${item.text}`}
-                    checked={item.done}
-                    onChange={(e) =>
-                      edit('Toggle checklist', (b) => {
-                        b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.done = e.target.checked;
-                      })
-                    }
-                  />
-                  <GrowingText
-                    label="Checklist text"
-                    className={item.done ? 'rb-struck' : ''}
-                    value={item.text}
-                    onEnter={(field) =>
-                      field
-                        .closest('.rb-inspector')
-                        ?.querySelector<HTMLTextAreaElement>('[aria-label="New checklist item"]')
-                        ?.focus()
-                    }
-                    onChange={(text) =>
-                      edit(
-                        'Edit checklist',
-                        (b) => {
-                          b.tasks[taskId]!.checklist.find((c) => c.id === item.id)!.text = text;
-                        },
-                        item.id,
-                      )
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="rb-icon-button"
-                    aria-label={`Remove checklist ${item.text}`}
-                    onClick={() => updateTask({ checklist: task.checklist.filter((c) => c.id !== item.id) })}
-                  >
-                    <Icon name="x" />
-                  </button>
-                </div>
-              ))}
-              <div className="rb-check-item rb-check-new">
-                <Icon name="plus" />
-                <GrowingText
-                  label="New checklist item"
-                  placeholder="Add a step and press Enter"
-                  value={newItem}
-                  onChange={setNewItem}
-                  onEnter={addItem}
-                />
-                <button type="button" aria-label="Add checklist item" onClick={addItem}>
-                  Add
-                </button>
-              </div>
               <div className="rb-section-title">
                 <span>
                   Prerequisites{' '}

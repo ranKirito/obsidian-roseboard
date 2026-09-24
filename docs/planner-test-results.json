@@ -1,61 +1,61 @@
 {
-  "version": "1.4.1",
-  "started": "2026-09-23T15:53:24.413Z",
+  "version": "1.5.0",
+  "started": "2026-09-24T14:08:46.481Z",
   "results": [
     {
       "name": "The bundled renderer rejects script loading and script elements without network requests",
       "result": "PASS",
-      "ms": 179
+      "ms": 196
     },
     {
       "name": "Read expands in place; scrolling stays inside the document and the board source is unchanged",
       "result": "PASS",
-      "ms": 324
+      "ms": 311
     },
     {
       "name": "Double-click edits inside the card; Save preserves properties and changes only the linked note",
       "result": "PASS",
-      "ms": 111
+      "ms": 134
     },
     {
       "name": "Unsaved note edits survive view changes and plugin reload",
       "result": "PASS",
-      "ms": 431
+      "ms": 346
     },
     {
       "name": "A conflicting note update cannot be overwritten; the draft can be saved separately",
       "result": "PASS",
-      "ms": 150
+      "ms": 137
     },
     {
       "name": "Cards of the same note share edits, and an active draft follows a file rename",
       "result": "PASS",
-      "ms": 91
+      "ms": 78
     },
     {
       "name": "Document cards render live Markdown safely while reading on the canvas",
       "result": "PASS",
-      "ms": 76
+      "ms": 74
     },
     {
       "name": "Reader refreshes external note edits and resolves explicit Markdown links relative to the document",
       "result": "PASS",
-      "ms": 53
+      "ms": 48
     },
     {
       "name": "Document rename, deletion and restoration update the card without altering note bodies",
       "result": "PASS",
-      "ms": 72
+      "ms": 67
     },
     {
       "name": "Read on canvas from a planner opens the linked card in place; there is no separate reader view",
       "result": "PASS",
-      "ms": 183
+      "ms": 167
     },
     {
       "name": "Day view capture also places the task on the canvas, tracks progress, and keeps overdue work separate",
       "result": "PASS",
-      "ms": 185
+      "ms": 176
     },
     {
       "name": "Unscheduled planning and accessible rescheduling change only the due date and undo cleanly",
@@ -65,60 +65,60 @@
     {
       "name": "Day tasks move by drag and drop between Unscheduled, the day list and the week strip",
       "result": "PASS",
-      "ms": 18208
+      "ms": 18192
     },
     {
       "name": "Routines repeat on chosen weekdays, tick per day, keep a streak, and stay out of tasks and the canvas",
       "result": "PASS",
-      "ms": 423
+      "ms": 406
     },
     {
       "name": "Assignments are editable, searchable and filter the calendar and daily view",
       "result": "PASS",
-      "ms": 279
+      "ms": 278
     },
     {
       "name": "Calendar navigation and drag rescheduling preserve canvas positions and persist on disk",
       "result": "PASS",
-      "ms": 128
+      "ms": 112
     },
     {
       "name": "Blocked completion still requires the existing confirmation",
       "result": "PASS",
-      "ms": 98
+      "ms": 90
     },
     {
       "name": "Source editing makes planner controls read-only; they resume after the editor closes",
       "result": "PASS",
-      "ms": 188
+      "ms": 171
     },
     {
       "name": "Document and planning shortcuts never edit hidden selected canvas cards",
       "result": "PASS",
-      "ms": 384
+      "ms": 251
     },
     {
       "name": "Narrow desktop viewport keeps Day, Calendar and List usable without horizontal overflow",
       "result": "PASS",
-      "ms": 226
+      "ms": 228
     },
     {
       "name": "New in a planner uses the selected day and adds one card without moving others",
       "result": "PASS",
-      "ms": 180
+      "ms": 161
     },
     {
       "name": "Compact header and tool palette stay within desktop and narrow panes",
       "result": "PASS",
-      "ms": 560
+      "ms": 571
     },
     {
       "name": "Reopening preserves assignments and dates, and creates no copied document body",
       "result": "PASS",
-      "ms": 279
+      "ms": 278
     }
   ],
   "errors": [],
-  "finished": "2026-09-23T15:53:47.382Z",
+  "finished": "2026-09-24T14:09:09.124Z",
   "remoteImageRequests": []
 }

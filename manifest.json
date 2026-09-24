@@ -1,7 +1,7 @@
 {
   "id": "roseboard",
   "name": "Roseboard",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "minAppVersion": "1.6.0",
   "description": "A visual task canvas with document previews, daily planning, calendars, freehand ink, and collaboration through your vault sync.",
   "author": "ranKirito",

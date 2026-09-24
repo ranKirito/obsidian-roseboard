@@ -1,5 +1,12 @@
 # Roseboard — implementation and test reports
 
+## 1.5.1 — 2026-09-24
+
+**100/100 automated checks and 60/60 isolated Obsidian scenarios pass** (37 canvas, 23 planner/document), with no renderer errors. The 1.5.1 package contains the exact `main.js` and `styles.css` bytes exercised by these tests; only version metadata changed afterward.
+
+- The on-card editor is exercised in the create-board scenario. It adds a Markdown description (raw HTML stays inert), adds two steps with Enter, removes one, and ticks the other. It renames a step by double-click and checks that arrow keys inside the field do not nudge the card. It also cancels a description edit with Escape. The inspector shows the on-card hint instead of the fields, and the stored task holds exactly the saved text and step.
+- Alignment was measured in the real app as the vertical distance between the centre of the completion circle and the title's first text line. The offset is 0 px in Kanban, Day and List and 0.3 px on canvas cards (before: 7.5, 9.6, 4.5 and 6.3 px).
+
 ## 1.5.0 — 2026-09-23
 
 Development validation on `main`, desktop Obsidian, isolated temporary vault and profile. **100/100 automated checks and 60/60 actual Obsidian scenarios pass**: 37 canvas regressions and 23 document, planner, toolbar and renderer-security scenarios. Neither integration report captured a renderer error, and no remote image request was made. TypeScript checking, schema generation and the production bundle pass. The 1.5.0 package contains the exact `main.js` and `styles.css` bytes exercised by these integration tests; only version metadata changed afterward (see `release-verification.json`).

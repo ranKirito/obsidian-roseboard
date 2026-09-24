@@ -107,7 +107,7 @@ A board is an ordinary Markdown note. This paragraph is preserved when Roseboard
       "x": 820,
       "y": 40,
       "width": 720,
-      "height": 530
+      "height": 660
     },
     "frame-discover": {
       "type": "frame",
@@ -115,7 +115,7 @@ A board is an ordinary Markdown note. This paragraph is preserved when Roseboard
       "x": 40,
       "y": 40,
       "width": 720,
-      "height": 530
+      "height": 660
     },
     "node-brief": {
       "type": "task",
@@ -148,7 +148,7 @@ A board is an ordinary Markdown note. This paragraph is preserved when Roseboard
       "type": "note",
       "notePath": "Project notes.md",
       "x": 416,
-      "y": 358,
+      "y": 478,
       "width": 300,
       "height": 178,
       "frameId": "frame-discover"
@@ -177,7 +177,7 @@ A board is an ordinary Markdown note. This paragraph is preserved when Roseboard
       "x": 416,
       "y": 112,
       "width": 300,
-      "height": 205,
+      "height": 330,
       "frameId": "frame-discover"
     }
   },

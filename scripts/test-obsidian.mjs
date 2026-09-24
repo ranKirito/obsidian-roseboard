@@ -135,7 +135,7 @@ try {
     const welcome = 'Welcome to Roseboard.md';
     const card = root().locator('[data-id="node-sketch"]');
     const steps = () => board(welcome).then((b) => b.tasks.sketch.checklist.map((c) => c.done));
-    assert.equal(await card.locator('.rb-card-checklist li').count(), 3);
+    assert.equal(await card.locator('.rb-card-checklist').getByRole('checkbox').count(), 3);
     await card.getByRole('checkbox', { name: 'Complete step Sketch two directions' }).click();
     assert.deepEqual(await steps(), [true, true, false]);
     await action('Undo');
@@ -148,7 +148,7 @@ try {
       `${session(welcome)}.edit('Add steps', (b) => { for (let i = 0; i < 6; i++) b.tasks.sketch.checklist.push({ id: 'probe-' + i, text: 'Probe step ' + i, done: false }); })`,
     );
     await eventually(async () => assert.ok((await shown()) > initial + 60));
-    assert.equal(await card.locator('.rb-card-checklist li').count(), 9);
+    assert.equal(await card.locator('.rb-card-checklist').getByRole('checkbox').count(), 9);
     assert.equal((await board(welcome)).nodes['node-sketch'].height, saved, 'fitted height is view-only');
     await action('Undo');
     await eventually(async () => assert.ok(Math.abs((await shown()) - initial) <= 2));
@@ -215,7 +215,7 @@ try {
     await action('Undo');
     assert.equal((await board(welcome)).nodes['node-review'].width, width);
   });
-  await test('Create board command, task record, inspector edits, quick dates and checklist persist', async () => {
+  await test('Create board command, task record, inspector edits, quick dates, and on-card description and checklist persist', async () => {
     await page.evaluate(() => app.commands.executeCommandById('roseboard:create-board'));
     await page.getByRole('textbox', { name: 'New board title' }).fill(testTitle);
     await page.getByRole('button', { name: 'Create board', exact: true }).click();
@@ -231,18 +231,45 @@ try {
     await root().getByLabel('Task priority', { exact: true }).selectOption('high');
     await root().getByRole('button', { name: 'Due tomorrow', exact: true }).click();
     await root().getByLabel('Due date', { exact: true }).fill('2026-09-18');
-    await root()
-      .getByLabel('Task description', { exact: true })
+    // On the canvas, description and checklist are written on the card, not in the inspector.
+    assert.equal(await root().getByLabel('Task description', { exact: true }).count(), 0);
+    await root().getByText('Description and checklist are edited on the card', { exact: false }).waitFor();
+    const card = root().locator('.react-flow__node').filter({ hasText: 'A tested task' });
+    await card.getByRole('button', { name: 'Add description', exact: true }).click();
+    await card
+      .getByLabel('Edit task description', { exact: true })
       .fill('**Useful** Markdown. <script>window.rbPwned=true</script>');
-    await root().getByLabel('New checklist item', { exact: true }).fill('Verify persistence');
-    await root().getByLabel('New checklist item', { exact: true }).press('Enter');
-    await root().getByRole('checkbox', { name: 'Complete checklist Verify persistence' }).check();
+    await card.getByLabel('Edit task description', { exact: true }).press('Meta+Enter');
+    await card.locator('.rb-card-desc strong').getByText('Useful').waitFor();
+    assert.equal(await card.locator('script').count(), 0);
+    await card.getByRole('button', { name: 'Add checklist', exact: true }).click();
+    await card.getByLabel('New step', { exact: true }).fill('Verify persistence');
+    await card.getByLabel('New step', { exact: true }).press('Enter');
+    await card.getByLabel('New step', { exact: true }).fill('Remove me');
+    await card.getByLabel('New step', { exact: true }).press('Enter');
+    await card.getByLabel('New step', { exact: true }).press('Escape');
+    await card.getByRole('checkbox', { name: 'Complete step Verify persistence' }).click();
+    await card.getByRole('button', { name: 'Remove step Remove me', exact: true }).click();
+    // Double-click renames a step; arrow keys edit text instead of nudging the card; Escape keeps it.
+    const x = (await board(path)).nodes[Object.keys((await board(path)).nodes)[0]].x;
+    await card.locator('li').filter({ hasText: 'Verify persistence' }).dblclick();
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('Escape');
+    assert.equal((await board(path)).nodes[Object.keys((await board(path)).nodes)[0]].x, x);
+    await card.getByRole('button', { name: 'Edit description', exact: true }).click();
+    await card.getByLabel('Edit task description', { exact: true }).fill('Discarded');
+    await card.getByLabel('Edit task description', { exact: true }).press('Escape');
+    assert.equal(await page.evaluate(() => window.rbPwned), undefined);
     await flush(path);
     const b = parse(await sourceText(path));
     taskId = Object.keys(b.tasks)[0];
     nodeId = Object.keys(b.nodes)[0];
     assert.equal(b.tasks[taskId].title, 'A tested task');
-    assert.equal(b.tasks[taskId].checklist[0].done, true);
+    assert.deepEqual(
+      b.tasks[taskId].checklist.map((c) => [c.text, c.done]),
+      [['Verify persistence', true]],
+    );
+    assert.equal(b.tasks[taskId].description, '**Useful** Markdown. <script>window.rbPwned=true</script>');
     assert.equal(b.tasks[taskId].dueDate, '2026-09-18');
     assert.equal(b.tasks[taskId].updatedBy, 'Test Mac');
     assert.match(b.tasks[taskId].updatedAt, /^\d{4}-\d{2}-\d{2}T/);

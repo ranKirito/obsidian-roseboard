@@ -45,6 +45,7 @@ import {
   type Color,
   type Filters,
   type Status,
+  type Task,
 } from '../domain/model';
 import {
   addStroke,
@@ -63,6 +64,7 @@ import {
   type Edit,
 } from '../domain/commands';
 import type { Change, Overlap } from '../domain/merge';
+import type { Draft } from 'immer';
 import { nodeTypes, formatDue, type FlowNode, type CardData } from './Nodes';
 import { Inspector } from './Inspector';
 import { Kanban } from './Kanban';
@@ -325,6 +327,14 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     },
     [edit],
   );
+  const editTask = useCallback(
+    (taskId: string, label: string, change: (task: Draft<Task>) => void) =>
+      edit(label, (b) => {
+        const task = b.tasks[taskId];
+        if (task) change(task);
+      }),
+    [edit],
+  );
   const toggleCheck = useCallback(
     (taskId: string, itemId: string) =>
       edit('Toggle checklist', (b) => {
@@ -394,6 +404,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
             begin,
             setText,
             toggleCheck,
+            editTask,
             fit: fitCard,
             overdue: !!task && overdue(task, today),
             blocked: !!task && blocked(task, board),
@@ -453,6 +464,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
     begin,
     setText,
     toggleCheck,
+    editTask,
     fitCard,
     fits,
     matching,
@@ -1837,12 +1849,13 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
                   strokeWidth: 1.5,
                   strokeDasharray: connectMode === 'dependency' ? '5 5' : undefined,
                 }}
-                onNodeClick={() => {
-                  if (!preview) {
-                    setSelectedTask(undefined);
-                    setSelectedEdge(undefined);
-                    setInspector(true);
-                  }
+                onNodeClick={(event) => {
+                  if (preview) return;
+                  setSelectedTask(undefined);
+                  setSelectedEdge(undefined);
+                  // The description and checklist are edited in place; opening the inspector there
+                  // would cover cards near the right edge mid double-click.
+                  if (!(event.target as HTMLElement).closest('.rb-task-body')) setInspector(true);
                 }}
                 onNodeContextMenu={(e, node) =>
                   cardMenu(e, selectedIds.includes(node.id) ? selectedIds : [node.id])
@@ -2308,6 +2321,7 @@ function BoardSurface({ host, preview }: { host: BoardHost; preview: boolean }) 
               edit={edit}
               complete={complete}
               previewNote={previewNote}
+              onCard={mode === 'canvas' && selectedNode?.type === 'task'}
             />
           ))}
       </div>
