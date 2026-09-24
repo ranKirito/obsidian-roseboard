@@ -1,5 +1,15 @@
 # Roseboard — implementation and test reports
 
+## 1.5.4 black-board crash fix — 2026-09-24
+
+**100/100 automated checks and 38/38 isolated desktop Obsidian scenarios pass**, with no captured renderer errors. The package contains the exact JavaScript and CSS exercised by the integration suite.
+
+- Reproduced React error 185 (maximum update depth) on the reported existing board in the user's vault, then reproduced the same blank view with a private local copy in the disposable test vault.
+- Removed the feedback between measured checklist overflow, the Show more control's height, and card fitting. Reserved scrollbar space also prevents text wrapping from changing when a scrollbar appears.
+- The local copy and the authorized live-vault check both render all 14 nodes successfully; at full zoom the 12 task bodies render and heights settle. No new renderer errors were captured during the live check. The live check used the user's existing theme and enabled plugins. Plugin/workspace backups were retained, and all 768 protected Markdown files remained byte-identical.
+- Added a public regression using synthetic text with representative small saved sizes and wrapped-row lengths. It checks stable heights, full-detail zoom, fit-to-board, tab switching, and unchanged board bytes. Private board text and screenshots remain local only.
+- The planner suite, physical mobile hardware and peer-device sync were not retested for this patch.
+
 ## 1.5.3 card readability fix — 2026-09-24
 
 **100/100 automated checks and 37/37 isolated desktop Obsidian canvas scenarios pass**, with no captured renderer errors. TypeScript checking, schema generation and the production build pass. The 1.5.3 package retains the exact JavaScript and CSS bytes tested after 1.5.2; only version metadata changed afterward. No real-vault installation is included. The planner suite and physical mobile devices were not retested for this change.

@@ -2,13 +2,17 @@
 
 A local-first visual task canvas for Obsidian. Charcoal surfaces, restrained rose accents, a full-pane working space, and plain Markdown as the source of truth.
 
-**Version 1.5.3.** The plugin is installable on desktop and mobile (`isDesktopOnly: false`), uses no Node/Electron APIs at runtime, and bundles its assets. Actual device testing is documented in [the test report](docs/TEST-REPORT.md); mobile-capable does not mean Android-verified.
+**Version 1.5.4.** The plugin is installable on desktop and mobile (`isDesktopOnly: false`), uses no Node/Electron APIs at runtime, and bundles its assets. Actual device testing is documented in [the test report](docs/TEST-REPORT.md); mobile-capable does not mean Android-verified.
 
 ![Read documents directly on the Roseboard canvas](docs/roseboard-canvas-reader.png)
 
-**[Download 1.5.3](https://github.com/ranKirito/obsidian-roseboard/releases/tag/1.5.3)** · **[Report a bug or suggest an improvement](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose)**
+**[Download 1.5.4](https://github.com/ranKirito/obsidian-roseboard/releases/tag/1.5.4)** · **[Report a bug or suggest an improvement](https://github.com/ranKirito/obsidian-roseboard/issues/new/choose)**
 
-Version 1.5.3 is the supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) is live: choose **Add to Obsidian**, then install and enable Roseboard. Manual installation is available below.
+Version 1.5.4 is the supported downloadable release. All development work is consolidated on `main`; older development remains in Git history. The [Obsidian Community Directory listing](https://community.obsidian.md/plugins/roseboard) is live: choose **Add to Obsidian**, then install and enable Roseboard. Manual installation is available below.
+
+## What is new in 1.5.4
+
+- Fixed the black-board crash caused by repeated layout updates on existing boards with wrapped checklist text.
 
 ## What is new in 1.5.3
 
@@ -63,7 +67,7 @@ Day and Calendar use the board's timezone and existing due dates. Filters apply 
 
 ## Install 1.5.2
 
-1. Download **[roseboard-1.5.3.zip](https://github.com/ranKirito/obsidian-roseboard/releases/download/1.5.3/roseboard-1.5.3.zip)**. Start with a test vault; back up your existing plugin folder before upgrading a vault you use daily.
+1. Download **[roseboard-1.5.4.zip](https://github.com/ranKirito/obsidian-roseboard/releases/download/1.5.4/roseboard-1.5.4.zip)**. Start with a test vault; back up your existing plugin folder before upgrading a vault you use daily.
 2. Extract the ZIP and copy its `roseboard` folder into `<vault>/.obsidian/plugins/`. The folder should contain `main.js`, `manifest.json`, and `styles.css`, plus license files.
 3. In the test vault, open **Settings → Community plugins**, enable community plugins, then enable **Roseboard**. Reload Obsidian if it was running while the files were copied.
 4. Optionally download the [welcome board](examples/Welcome%20to%20Roseboard.md) and [sample note](examples/Project%20notes.md) into your test vault to explore the features.

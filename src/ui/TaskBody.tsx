@@ -191,7 +191,6 @@ export function TaskBody({
   const [editing, setEditing] = useState<string>();
   const [open, setOpen] = useState(true);
   const [rows, setRows] = useState(DEFAULT_ROWS);
-  const [hidden, setHidden] = useState(false);
   const [descriptionMinimum, setDescriptionMinimum] = useState(64);
   const [listMinimum, setListMinimum] = useState(96);
   const preview = useRef<HTMLDivElement>(null);
@@ -215,7 +214,6 @@ export function TaskBody({
         ),
       );
     }
-    setHidden(!!items && items.scrollHeight > items.clientHeight + 1);
   };
   useLayoutEffect(measure);
   useEffect(() => {
@@ -289,7 +287,7 @@ export function TaskBody({
       )}
       {(steps.length > 0 || adding) && (
         <section
-          className={`rb-card-steps rb-fit-min${open ? ' is-open' : ''}${open && (hidden || rows > DEFAULT_ROWS) ? ' has-more' : ''}${!readOnly && !adding ? ' can-add' : ''}`}
+          className={`rb-card-steps rb-fit-min${open ? ' is-open' : ''}${open && steps.length > DEFAULT_ROWS ? ' has-more' : ''}${!readOnly && !adding ? ' can-add' : ''}`}
           style={{ '--rb-list-height': `${listMinimum}px` } as CSSProperties}
         >
           <button
@@ -417,15 +415,16 @@ export function TaskBody({
               </button>
             </div>
           )}
-          {open && (hidden || rows > DEFAULT_ROWS) && (
+          {/* Keep this control independent of measured overflow: its own height changes overflow. */}
+          {open && steps.length > DEFAULT_ROWS && (
             <button
               className="rb-card-steps-more nodrag"
               onClick={(event) => {
                 event.stopPropagation();
-                setRows(hidden && rows < MAX_ROWS ? MAX_ROWS : DEFAULT_ROWS);
+                setRows(rows < MAX_ROWS ? MAX_ROWS : DEFAULT_ROWS);
               }}
             >
-              {hidden && rows < MAX_ROWS ? 'Show more' : 'Show less'}
+              {rows < MAX_ROWS ? 'Show more' : 'Show less'}
             </button>
           )}
         </section>

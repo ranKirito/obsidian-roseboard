@@ -1,24 +1,24 @@
 {
-  "verifiedAt": "2026-09-24T15:45:45.455197+00:00",
-  "version": "1.5.3",
-  "archive": "release/roseboard-1.5.3.zip",
-  "archiveSHA256": "3d70aab4fdfb1c7fe3952885b81059a8ef8407e558ef2e91f98ba0d10aa37561",
+  "verifiedAt": "2026-09-24T16:15:54.496710+00:00",
+  "version": "1.5.4",
+  "archive": "release/roseboard-1.5.4.zip",
+  "archiveSHA256": "9cd05607bbfe236905c641f5396936d4212d23402a95f59065c0583000caab84",
   "checks": {
     "main.js": {
-      "sha256": "9c94519f0e316a7dafe7d93e9f5e18615a397b6de4988a87e753e65752216d89",
+      "sha256": "731abb0833995f39540dcbb05d48ec524d8f116aa9c2a008112d605aff65d79c",
       "matchesIntegrationTestedBuild": true
     },
     "styles.css": {
-      "sha256": "a4bfdd33707db312d946c8edb50e6ca21be1fbae450511fe466473d528af193e",
+      "sha256": "5c06f350bb94b04673446c6105cd42df1cd4d6f6b03d40e9e69c39a2d6dcd70f",
       "matchesIntegrationTestedBuild": true
     },
     "manifest.json": {
-      "sha256": "a6f349e370cd18a112448b1dce97afb33ebf5f7df5cd1ec85bf7826635f3ba1d",
-      "matchesIntegrationTestedBuild": false
+      "sha256": "a18a2ee7ac0fa44f9f03afdcefa47d52a131866e0bb05bc65f8933fcb927dcf7",
+      "matchesIntegrationTestedBuild": true
     }
   },
   "automatedTests": 100,
-  "isolatedObsidianScenarios": 37,
+  "isolatedObsidianScenarios": 38,
   "rendererErrors": 0,
-  "note": "All 37 canvas integration scenarios exercised these exact main.js and styles.css bytes before the metadata-only version bump from 1.5.2 to 1.5.3. The final version metadata passed the automated consistency tests. The planner suite was not rerun for this change. No real vault was changed by the test drivers."
+  "note": "The release files exactly match the isolated integration-tested build. The reported crash was also reproduced with an existing board and verified fixed in its existing vault, with theme and plugins active; all 768 protected Markdown files remained unchanged. Private board content and screenshots are excluded from public fixtures."
 }

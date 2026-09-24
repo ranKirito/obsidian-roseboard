@@ -119,6 +119,8 @@ try {
       stamps: true,
     });
     await plugin.saveData(plugin.settings);
+    app.workspace.leftSplit.collapse();
+    app.workspace.rightSplit.collapse();
     app.vault.setConfig('nativeMenus', false); // Temporary test vault only: DOM menus are observable.
   });
   await test('Bundled plugin loads in installed Obsidian; full-pane example canvas', async () => {
@@ -240,6 +242,85 @@ try {
     await action('Undo');
     await eventually(async () => assert.equal((await board(welcome)).tasks.sketch.checklist.length, 3));
     assert.deepEqual((await board(welcome)).nodes['node-sketch'], original);
+  });
+  await test('Existing compact board geometry stays stable with long wrapped checklists across zoom and tab changes', async () => {
+    // Synthetic text with the sizes and row-length distribution of the reported existing board.
+    const layouts = [
+      [220, 24, 193, [105, 84, 103, 87, 87]],
+      [220, 26, 211, [96, 114, 108, 126]],
+      [220, 24, 181, [73, 85, 106, 110, 97]],
+      [220, 20, 162, [93, 64, 79, 97]],
+      [220, 16, 287, []],
+      [238, 25, 173, [93, 169, 114, 130, 155]],
+      [220, 32, 248, []],
+      [482, 28, 136, [146, 62, 68, 67]],
+      [220, 30, 174, [175, 79, 160, 121]],
+      [220, 27, 199, [130, 147, 125, 94]],
+      [220, 33, 615, [74, 66, 80, 74]],
+      [220, 32, 280, [76, 87, 145, 149, 123, 204]],
+    ];
+    const repeat = (length) =>
+      'A useful checklist item with several words that wrap inside a compact card. '
+        .repeat(12)
+        .slice(0, length);
+    const b = structuredClone(await board('Welcome to Roseboard.md'));
+    b.title = 'Wrapped checklist regression';
+    b.tasks = {};
+    b.nodes = {};
+    b.edges = {};
+    delete b.ink;
+    layouts.forEach(([height, titleLength, descriptionLength, lengths], i) => {
+      const id = 'layout-' + i;
+      b.tasks[id] = {
+        title: repeat(titleLength),
+        description: repeat(descriptionLength),
+        status: 'todo',
+        priority: 'none',
+        tags: [],
+        dependsOn: [],
+        checklist: lengths.map((length, j) => ({ id: 'step-' + j, text: repeat(length), done: false })),
+      };
+      b.nodes[id] = {
+        type: 'task',
+        taskId: id,
+        x: (i % 4) * 400,
+        y: Math.floor(i / 4) * 290,
+        width: 340,
+        height,
+      };
+    });
+    const name = 'Wrapped checklist regression ' + Date.now() + '.md';
+    const source = '# Layout regression\n\n```roseboard\n' + JSON.stringify(b, null, 2) + '\n```\n';
+    await page.evaluate(
+      async ([name, source]) => {
+        await app.vault.create(name, source);
+      },
+      [name, source],
+    );
+    await open(name);
+    const check = async () => {
+      await root().getByLabel('Reset zoom', { exact: true }).click();
+      await eventually(async () =>
+        assert.equal(await root().locator('.rb-task-body').count(), layouts.length),
+      );
+      const heights = () =>
+        root()
+          .locator('.react-flow__node')
+          .evaluateAll((nodes) => nodes.map((n) => n.offsetHeight));
+      await page.waitForTimeout(250);
+      const before = await heights();
+      await page.waitForTimeout(350);
+      assert.deepEqual(await heights(), before, 'card fitting settles instead of repeatedly changing height');
+      assert.equal(await sourceText(name), source, 'rendering never rewrites saved board data');
+    };
+    await check();
+    await root().getByLabel('Fit all', { exact: true }).click();
+    await check();
+    await open('Welcome to Roseboard.md');
+    await open(name);
+    await check();
+    await closeBoards();
+    await open('Welcome to Roseboard.md');
   });
   await test('Selection actions never overlap the zoom controls, with or without the inspector', async () => {
     const rects = async () => ({

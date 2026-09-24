@@ -31,4 +31,6 @@ This repository is the development home of the plugin. Boards themselves live in
 
 Run `npm test` and `npm run build`. Use a disposable test vault and isolated Obsidian profile for integration tests (`scripts/launch-test-vault.mjs`, `scripts/test-obsidian.mjs`, `scripts/reload-test-vault.mjs`). Never install test builds into the user's real vault without an explicit request. The test driver refuses to target any vault other than the one the launcher created.
 
+Before publishing card-layout changes, also exercise local copies of existing boards, including long wrapped descriptions/checklists, saved small card sizes, zoom and tab changes. Keep private board text and screenshots out of public fixtures. For an authorized live-vault recovery, back up the plugin and workspace and compare note hashes after testing. Close the isolated test application when finished; the user's regular Obsidian profile must remain the normal entry point.
+
 Do not add features that would change the storage contract without bumping the documented schema rules. Keep `docs/TEST-REPORT.md` precise about automated tests, actual Obsidian tests, desktop emulation, and unavailable physical-device/LiveSync tests.

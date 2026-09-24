@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.4 — 2026-09-24
+
+- Fixed a repeated layout update that could crash the Roseboard view and leave it black on existing boards with wrapped checklists. Show more/less no longer depends on the overflow that the control itself changes.
+- Reserved scrollbar space keeps descriptions and checklist text from repeatedly rewrapping during card fitting.
+
 ## 1.5.3 — 2026-09-24
 
 - Fixed task-card descriptions shrinking to a faded, unreadable line. Cards reserve up to four lines for the description; longer text scrolls without a fade, including in read-only views.
